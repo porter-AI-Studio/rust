@@ -1,0 +1,391 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-ccykbmgk><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>借用與參考：有契約的共享 | Rust 實戰指南</title><meta name="description" content="說明 Rust 的參考與借用：不可變參考與可變參考、「一寫或多讀」規則與 data race、參考的有效範圍（只到最後一次使用）、懸空參考，以及迴圈中常見的借用錯誤與修法。"><link rel="icon" href="/rust/favicon.svg" type="image/svg+xml"><script>
+    (function () {
+      const s = localStorage.getItem('cc-theme');
+      const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark');
+    })();
+  </script><link rel="stylesheet" href="/rust/_astro/DocsLayout.9CQhNdRI.css"><style>.cb-wrap[data-astro-cid-c6nuo4je]{margin-bottom:1.25rem}.cb-bar[data-astro-cid-c6nuo4je]{background:#1a1a2e;border:1px solid #ffffff14;border-bottom-color:#ffffff0d;border-radius:6px 6px 0 0;justify-content:space-between;align-items:center;min-height:1.8rem;padding:.18rem .5rem .18rem .75rem;display:flex}.cb-label[data-astro-cid-c6nuo4je]{color:#a6adc8;letter-spacing:.04em;font-family:Fira Code,Cascadia Code,Consolas,monospace;font-size:.73rem}.cb-inner[data-astro-cid-c6nuo4je] pre{border-radius:0 0 8px 8px!important;margin-bottom:0!important}.cb-copy[data-astro-cid-c6nuo4je]{color:#888;cursor:pointer;background:#ffffff14;border:1px solid #ffffff1f;border-radius:4px;flex-shrink:0;padding:.15rem .55rem;font-size:.7rem;transition:all .15s}.cb-copy[data-astro-cid-c6nuo4je]:hover{color:#fff;background:#ffffff2e}.cb-copy[data-astro-cid-c6nuo4je].copied{color:#4ec9b0;border-color:#4ec9b0}
+</style></head><body data-astro-cid-ccykbmgk><div id="pb" data-astro-cid-ccykbmgk></div><header data-astro-cid-ccykbmgk><div class="hi" data-astro-cid-ccykbmgk><div class="hl" data-astro-cid-ccykbmgk><button id="mbtn" class="ibtn" aria-label="選單" data-astro-cid-ccykbmgk><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" data-astro-cid-ccykbmgk></path></svg></button><a href="/rust/" class="site-name" data-astro-cid-ccykbmgk><span class="logo" data-astro-cid-ccykbmgk>RS</span>&nbsp;&nbsp;Rust 實戰指南</a></div><div class="hr" data-astro-cid-ccykbmgk><button id="tt" class="ibtn" aria-label="切換主題" data-astro-cid-ccykbmgk><svg id="isun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" data-astro-cid-ccykbmgk></path></svg><svg id="imoon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" data-astro-cid-ccykbmgk></path></svg></button></div></div></header><div id="layout" data-astro-cid-ccykbmgk><nav id="sb" data-astro-cid-ccykbmgk><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="0" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 0：前言</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="0" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/preface" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>0.</span><span data-astro-cid-ccykbmgk>前言</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="1" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 1：認識 Rust</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="1" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>1.</span><span data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch02-setup-cargo" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>2.</span><span data-astro-cid-ccykbmgk>安裝與 Cargo：第一個專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>3.</span><span data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>4.</span><span data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="2" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 2：所有權：Rust 的核心</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="2" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>5.</span><span data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" class="active" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>6.</span><span data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch07-lifetimes" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>7.</span><span data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>8.</span><span data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="3" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 3：型別系統與錯誤處理</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="3" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>9.</span><span data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>10.</span><span data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>11.</span><span data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="4" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 4：並行與非同步</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="4" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch12-concurrency" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>12.</span><span data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>13.</span><span data-astro-cid-ccykbmgk>async/await 基礎</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>14.</span><span data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="5" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 5：工程實務與生態</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="5" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch15-idioms-and-project" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>15.</span><span data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch16-systems-linux-embedded" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>16.</span><span data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch17-reality-check" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>17.</span><span data-astro-cid-ccykbmgk>現實檢查：批評、代價與重寫案例</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="6" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 6：附錄</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="6" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/glossary" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>18.</span><span data-astro-cid-ccykbmgk>名詞解釋</span></a></li></ul></div></nav><div id="ov" data-astro-cid-ccykbmgk></div><main data-astro-cid-ccykbmgk><div class="cb" data-astro-cid-ccykbmgk><span class="clabel">第 6 章 · Part 2：所有權：Rust 的核心</span><h1>借用與參考：有契約的共享</h1><p class="cdesc">不想把資料「過戶」給別人，只想借他看或改一下：參考與借用規則。</p><p>上一章結尾留下一個痛點：函式想用一個 <code>String</code>，卻得先把所有權拿走再還回來，連 tuple 都搬出來了。解法是參考（reference）：拿到資料的位址，但不拿走所有權。</p><div class="call info"><span class="ci">ℹ️</span><div><strong>本章素材來源</strong><p>主要範例與編譯器輸出取自官方 The Rust Programming Language 的 <a href="https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html">References and Borrowing</a>；迴圈借用的案例取自 ZetCode 的 <a href="https://zetcode.com/rust/ownership/">Rust ownership and borrowing</a>（個人教學站，非官方）；Go 與 data race 的對比取自 iT 邦幫忙 2025 鐵人賽〈(Day3) Rust 借用 (Borrowing)：有契約的共享〉。</p></div></div><h2>參考：指向資料，但不擁有它</h2><p>官方文件這樣描述：參考像指標，是一個可以順著走到資料的位址，而那份資料屬於別的變數所有。與指標不同的是，參考保證在它的整個存續期間，都會指向某個特定型別的有效值。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>用參考當參數，不取得所有權（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let s1 = String::from(&quot;hello&quot;);
+
+    let len = calculate_length(&amp;s1);
+
+    println!(&quot;The length of '{s1}' is {len}.&quot;);
+}
+
+fn calculate_length(s: &amp;String) -> usize { // s is a reference to a String
+    s.len()
+} // Here, s goes out of scope. But because s does not have ownership of what
+  // it refers to, the String is not dropped." data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> len</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> calculate_length</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">s1</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The length of '{s1}' is {len}."</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> calculate_length</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">usize</span><span style="color:#ABB2BF"> { </span><span style="color:#7F848E;font-style:italic">// s is a reference to a String</span></span>
+<span class="line"><span style="color:#E06C75">    s</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">} </span><span style="color:#7F848E;font-style:italic">// Here, s goes out of scope. But because s does not have ownership of what</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">  // it refers to, the String is not dropped.</span></span></code></pre></div></div><script type="module">document.querySelectorAll(`.cb-copy`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.code;t&&navigator.clipboard.writeText(t).then(()=>{e.textContent=`已複製!`,e.classList.add(`copied`),setTimeout(()=>{e.textContent=`複製`,e.classList.remove(`copied`)},2e3)})})});</script><p>呼叫端寫 <code>&amp;s1</code>，函式簽名寫 <code>&amp;String</code>。這個 <code>&amp;</code> 讓你引用某個值而不取得所有權。因為 <code>s</code> 不擁有它指向的 <code>String</code>，函式結束時 <code>String</code> 不會被 drop，也就不必把值還回去，因為根本沒拿走。官方文件把建立參考的動作稱為借用（borrowing）：像現實生活一樣，借來的東西用完要還，而且它不是你的。</p><p>與 <code>&amp;</code> 相反的動作是解參考（dereference），運算子是 <code>*</code>；官方文件說會在後面章節（Chapter 8、15）再討論，本書留到智慧指標那一章。</p><figure class="svg-fig"><img src="/rust/img/ch06/01-framework-owner-vs-reference.png" alt="擁有者與參考兩種角色的對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 6-1：擁有者與參考：&amp;s1 只是位址，函式結束時 String 不會被 drop</figcaption></figure><h2>預設不可修改，要改得用 &amp;mut</h2><p>就像變數預設不可變，參考也是。拿到 <code>&amp;String</code> 就不能修改它：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 4-6：嘗試修改借來的值（官方 Rust Book，無法編譯）</span><button class="cb-copy" data-code="fn main() {
+    let s = String::from(&quot;hello&quot;);
+
+    change(&amp;s);
+}
+
+fn change(some_string: &amp;String) {
+    some_string.push_str(&quot;, world&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    change</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> change</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">some_string</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#E06C75">    some_string</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">push_str</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">", world"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>編譯器輸出（官方 Rust Book）</span><button class="cb-copy" data-code="$ cargo run
+   Compiling ownership v0.1.0 (file:///projects/ownership)
+error[E0596]: cannot borrow `*some_string` as mutable, as it is behind a `&amp;` reference
+ --> src/main.rs:8:5
+  |
+8 |     some_string.push_str(&quot;, world&quot;);
+  |     ^^^^^^^^^^^ `some_string` is a `&amp;` reference, so it cannot be borrowed as mutable
+  |
+help: consider changing this to be a mutable reference
+  |
+7 | fn change(some_string: &amp;mut String) {
+  |                         +++
+
+For more information about this error, try `rustc --explain E0596`.
+error: could not compile `ownership` (bin &quot;ownership&quot;) due to 1 previous error" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> run</span></span>
+<span class="line"><span style="color:#61AFEF">   Compiling</span><span style="color:#98C379"> ownership</span><span style="color:#98C379"> v0.1.0</span><span style="color:#ABB2BF"> (file:///projects/ownership)</span></span>
+<span class="line"><span style="color:#61AFEF">error[E0596]:</span><span style="color:#98C379"> cannot</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> `</span><span style="color:#ABB2BF">*</span><span style="color:#98C379">some_string`</span><span style="color:#61AFEF"> as</span><span style="color:#98C379"> mutable,</span><span style="color:#98C379"> as</span><span style="color:#98C379"> it</span><span style="color:#98C379"> is</span><span style="color:#98C379"> behind</span><span style="color:#98C379"> a</span><span style="color:#98C379"> `&#x26;`</span><span style="color:#61AFEF"> reference</span></span>
+<span class="line"><span style="color:#61AFEF"> --</span><span style="color:#ABB2BF">> </span><span style="color:#98C379">src/main.rs:8:5</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">8</span><span style="color:#ABB2BF"> |     </span><span style="color:#61AFEF">some_string.push_str(</span><span style="color:#61AFEF">", world"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">  |     </span><span style="color:#61AFEF">^^^^^^^^^^^</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">some_string</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> is</span><span style="color:#98C379"> a</span><span style="color:#98C379"> `&#x26;`</span><span style="color:#61AFEF"> reference,</span><span style="color:#98C379"> so</span><span style="color:#98C379"> it</span><span style="color:#98C379"> cannot</span><span style="color:#98C379"> be</span><span style="color:#98C379"> borrowed</span><span style="color:#98C379"> as</span><span style="color:#98C379"> mutable</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">help:</span><span style="color:#98C379"> consider</span><span style="color:#98C379"> changing</span><span style="color:#98C379"> this</span><span style="color:#98C379"> to</span><span style="color:#98C379"> be</span><span style="color:#98C379"> a</span><span style="color:#98C379"> mutable</span><span style="color:#98C379"> reference</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">7</span><span style="color:#ABB2BF"> | </span><span style="color:#61AFEF">fn</span><span style="color:#98C379"> change</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">some_string:</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#61AFEF">mut</span><span style="color:#98C379"> String</span><span style="color:#ABB2BF">) </span><span style="color:#98C379">{</span></span>
+<span class="line"><span style="color:#ABB2BF">  |                         </span><span style="color:#61AFEF">+++</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">For</span><span style="color:#98C379"> more</span><span style="color:#98C379"> information</span><span style="color:#98C379"> about</span><span style="color:#98C379"> this</span><span style="color:#98C379"> error,</span><span style="color:#98C379"> try</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">rustc</span><span style="color:#D19A66"> --explain</span><span style="color:#98C379"> E0596`</span><span style="color:#56B6C2">.</span></span>
+<span class="line"><span style="color:#61AFEF">error:</span><span style="color:#98C379"> could</span><span style="color:#98C379"> not</span><span style="color:#98C379"> compile</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">ownership</span><span style="color:#98C379">`</span><span style="color:#ABB2BF"> (</span><span style="color:#61AFEF">bin</span><span style="color:#98C379"> "ownership"</span><span style="color:#ABB2BF">) </span><span style="color:#61AFEF">due</span><span style="color:#98C379"> to</span><span style="color:#D19A66"> 1</span><span style="color:#98C379"> previous</span><span style="color:#98C379"> error</span></span></code></pre></div></div><p>錯誤訊息的 help 已經告訴你答案：改用可變參考。做法有三處：變數要宣告 <code>mut</code>、呼叫端寫 <code>&amp;mut s</code>、函式簽名寫 <code>&amp;mut String</code>。這也讓「這個函式會修改它借到的值」在簽名上一目了然。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>可變參考（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let mut s = String::from(&quot;hello&quot;);
+
+    change(&amp;mut s);
+}
+
+fn change(some_string: &amp;mut String) {
+    some_string.push_str(&quot;, world&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    change</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> change</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">some_string</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#E06C75">    some_string</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">push_str</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">", world"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><figure class="svg-fig"><img src="/rust/img/ch06/02-infographic-three-places-mut.png" alt="可變參考在變數、呼叫端與函式簽名三處都要寫 mut 的清單" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 6-2：要改就用 &amp;mut：變數、呼叫端、函式簽名三處都要寫</figcaption></figure><h2>借用的契約：一寫或多讀</h2><p>可變參考有個很大的限制：只要存在某個值的可變參考，就不能有任何其他參考指向它。同時建立兩個就無法編譯：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>兩個可變參考（官方 Rust Book，無法編譯）</span><button class="cb-copy" data-code="fn main() {
+    let mut s = String::from(&quot;hello&quot;);
+
+    let r1 = &amp;mut s;
+    let r2 = &amp;mut s;
+
+    println!(&quot;{r1}, {r2}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r1</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r2</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{r1}, {r2}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>編譯器輸出（官方 Rust Book）</span><button class="cb-copy" data-code="$ cargo run
+   Compiling ownership v0.1.0 (file:///projects/ownership)
+error[E0499]: cannot borrow `s` as mutable more than once at a time
+ --> src/main.rs:5:14
+  |
+4 |     let r1 = &amp;mut s;
+  |              ------ first mutable borrow occurs here
+5 |     let r2 = &amp;mut s;
+  |              ^^^^^^ second mutable borrow occurs here
+6 |
+7 |     println!(&quot;{r1}, {r2}&quot;);
+  |                -- first borrow later used here
+
+For more information about this error, try `rustc --explain E0499`.
+error: could not compile `ownership` (bin &quot;ownership&quot;) due to 1 previous error" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> run</span></span>
+<span class="line"><span style="color:#61AFEF">   Compiling</span><span style="color:#98C379"> ownership</span><span style="color:#98C379"> v0.1.0</span><span style="color:#ABB2BF"> (file:///projects/ownership)</span></span>
+<span class="line"><span style="color:#61AFEF">error[E0499]:</span><span style="color:#98C379"> cannot</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">s</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> as</span><span style="color:#98C379"> mutable</span><span style="color:#98C379"> more</span><span style="color:#98C379"> than</span><span style="color:#98C379"> once</span><span style="color:#98C379"> at</span><span style="color:#98C379"> a</span><span style="color:#98C379"> time</span></span>
+<span class="line"><span style="color:#61AFEF"> --</span><span style="color:#ABB2BF">> </span><span style="color:#98C379">src/main.rs:5:14</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">4</span><span style="color:#ABB2BF"> |     </span><span style="color:#56B6C2">let</span><span style="color:#98C379"> r1</span><span style="color:#98C379"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#61AFEF">mut</span><span style="color:#98C379"> s</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">  |              </span><span style="color:#61AFEF">------</span><span style="color:#98C379"> first</span><span style="color:#98C379"> mutable</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> occurs</span><span style="color:#98C379"> here</span></span>
+<span class="line"><span style="color:#61AFEF">5</span><span style="color:#ABB2BF"> |     </span><span style="color:#56B6C2">let</span><span style="color:#98C379"> r2</span><span style="color:#98C379"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#61AFEF">mut</span><span style="color:#98C379"> s</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">  |              </span><span style="color:#61AFEF">^^^^^^</span><span style="color:#98C379"> second</span><span style="color:#98C379"> mutable</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> occurs</span><span style="color:#98C379"> here</span></span>
+<span class="line"><span style="color:#61AFEF">6</span><span style="color:#ABB2BF"> |</span></span>
+<span class="line"><span style="color:#61AFEF">7</span><span style="color:#ABB2BF"> |     </span><span style="color:#61AFEF">println!(</span><span style="color:#61AFEF">"{r1}, {r2}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">  |                </span><span style="color:#61AFEF">--</span><span style="color:#98C379"> first</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> later</span><span style="color:#98C379"> used</span><span style="color:#98C379"> here</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">For</span><span style="color:#98C379"> more</span><span style="color:#98C379"> information</span><span style="color:#98C379"> about</span><span style="color:#98C379"> this</span><span style="color:#98C379"> error,</span><span style="color:#98C379"> try</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">rustc</span><span style="color:#D19A66"> --explain</span><span style="color:#98C379"> E0499`</span><span style="color:#56B6C2">.</span></span>
+<span class="line"><span style="color:#61AFEF">error:</span><span style="color:#98C379"> could</span><span style="color:#98C379"> not</span><span style="color:#98C379"> compile</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">ownership</span><span style="color:#98C379">`</span><span style="color:#ABB2BF"> (</span><span style="color:#61AFEF">bin</span><span style="color:#98C379"> "ownership"</span><span style="color:#ABB2BF">) </span><span style="color:#61AFEF">due</span><span style="color:#98C379"> to</span><span style="color:#D19A66"> 1</span><span style="color:#98C379"> previous</span><span style="color:#98C379"> error</span></span></code></pre></div></div><p>iT 邦幫忙那篇文章把這條規則濃縮成一句：要嘛很多人一起讀（<code>&amp;T</code>），要嘛只有一個人能寫（<code>&amp;mut T</code>）。官方文件說明這條限制的好處：Rust 能在編譯期就防止 data race。data race 發生在同時滿足三個條件時：</p><ul><li>兩個以上的指標同時存取同一份資料；</li><li>至少有一個指標用來寫入；</li><li>沒有任何同步存取的機制。</li></ul><p>data race 會造成未定義行為，執行期很難追查；Rust 的做法是乾脆不讓這種程式碼通過編譯。需要多個可變參考時，可以用大括號分出新作用域，只要不是「同時」存在即可：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>用作用域錯開可變參考（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let mut s = String::from(&quot;hello&quot;);
+
+    {
+        let r1 = &amp;mut s;
+    } // r1 goes out of scope here, so we can make a new reference with no problems.
+
+    let r2 = &amp;mut s;
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> r1</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">    } </span><span style="color:#7F848E;font-style:italic">// r1 goes out of scope here, so we can make a new reference with no problems.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r2</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>可變與不可變參考混用，也適用類似的規則：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>同時持有不可變與可變參考（官方 Rust Book，無法編譯）</span><button class="cb-copy" data-code="fn main() {
+    let mut s = String::from(&quot;hello&quot;);
+
+    let r1 = &amp;s; // no problem
+    let r2 = &amp;s; // no problem
+    let r3 = &amp;mut s; // BIG PROBLEM
+
+    println!(&quot;{r1}, {r2}, and {r3}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r1</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">; </span><span style="color:#7F848E;font-style:italic">// no problem</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r2</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">; </span><span style="color:#7F848E;font-style:italic">// no problem</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r3</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">; </span><span style="color:#7F848E;font-style:italic">// BIG PROBLEM</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{r1}, {r2}, and {r3}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>編譯器輸出（官方 Rust Book）</span><button class="cb-copy" data-code="$ cargo run
+   Compiling ownership v0.1.0 (file:///projects/ownership)
+error[E0502]: cannot borrow `s` as mutable because it is also borrowed as immutable
+ --> src/main.rs:6:14
+  |
+4 |     let r1 = &amp;s; // no problem
+  |              -- immutable borrow occurs here
+5 |     let r2 = &amp;s; // no problem
+6 |     let r3 = &amp;mut s; // BIG PROBLEM
+  |              ^^^^^^ mutable borrow occurs here
+7 |
+8 |     println!(&quot;{r1}, {r2}, and {r3}&quot;);
+  |                -- immutable borrow later used here
+
+For more information about this error, try `rustc --explain E0502`.
+error: could not compile `ownership` (bin &quot;ownership&quot;) due to 1 previous error" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> run</span></span>
+<span class="line"><span style="color:#61AFEF">   Compiling</span><span style="color:#98C379"> ownership</span><span style="color:#98C379"> v0.1.0</span><span style="color:#ABB2BF"> (file:///projects/ownership)</span></span>
+<span class="line"><span style="color:#61AFEF">error[E0502]:</span><span style="color:#98C379"> cannot</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">s</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> as</span><span style="color:#98C379"> mutable</span><span style="color:#98C379"> because</span><span style="color:#98C379"> it</span><span style="color:#98C379"> is</span><span style="color:#98C379"> also</span><span style="color:#98C379"> borrowed</span><span style="color:#98C379"> as</span><span style="color:#98C379"> immutable</span></span>
+<span class="line"><span style="color:#61AFEF"> --</span><span style="color:#ABB2BF">> </span><span style="color:#98C379">src/main.rs:6:14</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">4</span><span style="color:#ABB2BF"> |     </span><span style="color:#56B6C2">let</span><span style="color:#98C379"> r1</span><span style="color:#98C379"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#61AFEF">s</span><span style="color:#ABB2BF">; </span><span style="color:#61AFEF">//</span><span style="color:#98C379"> no</span><span style="color:#98C379"> problem</span></span>
+<span class="line"><span style="color:#ABB2BF">  |              </span><span style="color:#61AFEF">--</span><span style="color:#98C379"> immutable</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> occurs</span><span style="color:#98C379"> here</span></span>
+<span class="line"><span style="color:#61AFEF">5</span><span style="color:#ABB2BF"> |     </span><span style="color:#56B6C2">let</span><span style="color:#98C379"> r2</span><span style="color:#98C379"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#61AFEF">s</span><span style="color:#ABB2BF">; </span><span style="color:#61AFEF">//</span><span style="color:#98C379"> no</span><span style="color:#98C379"> problem</span></span>
+<span class="line"><span style="color:#61AFEF">6</span><span style="color:#ABB2BF"> |     </span><span style="color:#56B6C2">let</span><span style="color:#98C379"> r3</span><span style="color:#98C379"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#61AFEF">mut</span><span style="color:#98C379"> s</span><span style="color:#ABB2BF">; </span><span style="color:#61AFEF">//</span><span style="color:#98C379"> BIG</span><span style="color:#98C379"> PROBLEM</span></span>
+<span class="line"><span style="color:#ABB2BF">  |              </span><span style="color:#61AFEF">^^^^^^</span><span style="color:#98C379"> mutable</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> occurs</span><span style="color:#98C379"> here</span></span>
+<span class="line"><span style="color:#61AFEF">7</span><span style="color:#ABB2BF"> |</span></span>
+<span class="line"><span style="color:#61AFEF">8</span><span style="color:#ABB2BF"> |     </span><span style="color:#61AFEF">println!(</span><span style="color:#61AFEF">"{r1}, {r2}, and {r3}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">  |                </span><span style="color:#61AFEF">--</span><span style="color:#98C379"> immutable</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> later</span><span style="color:#98C379"> used</span><span style="color:#98C379"> here</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">For</span><span style="color:#98C379"> more</span><span style="color:#98C379"> information</span><span style="color:#98C379"> about</span><span style="color:#98C379"> this</span><span style="color:#98C379"> error,</span><span style="color:#98C379"> try</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">rustc</span><span style="color:#D19A66"> --explain</span><span style="color:#98C379"> E0502`</span><span style="color:#56B6C2">.</span></span>
+<span class="line"><span style="color:#61AFEF">error:</span><span style="color:#98C379"> could</span><span style="color:#98C379"> not</span><span style="color:#98C379"> compile</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">ownership</span><span style="color:#98C379">`</span><span style="color:#ABB2BF"> (</span><span style="color:#61AFEF">bin</span><span style="color:#98C379"> "ownership"</span><span style="color:#ABB2BF">) </span><span style="color:#61AFEF">due</span><span style="color:#98C379"> to</span><span style="color:#D19A66"> 1</span><span style="color:#98C379"> previous</span><span style="color:#98C379"> error</span></span></code></pre></div></div><p>原因很直覺：正在讀的人不會預期資料突然被改掉；多個不可變參考則沒問題，因為只讀的人不會影響別人。</p><h3>參考的範圍到「最後一次使用」為止</h3><p>官方文件特別提醒：參考的作用範圍從它被建立開始，持續到最後一次被使用為止。所以下面的程式可以編譯：<code>r1</code> 與 <code>r2</code> 最後一次使用在第一個 <code>println!</code>，之後才建立 <code>r3</code>，兩段範圍沒有重疊。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>不可變參考用完之後才建立可變參考（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let mut s = String::from(&quot;hello&quot;);
+
+    let r1 = &amp;s; // no problem
+    let r2 = &amp;s; // no problem
+    println!(&quot;{r1} and {r2}&quot;);
+    // Variables r1 and r2 will not be used after this point.
+
+    let r3 = &amp;mut s; // no problem
+    println!(&quot;{r3}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r1</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">; </span><span style="color:#7F848E;font-style:italic">// no problem</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r2</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">; </span><span style="color:#7F848E;font-style:italic">// no problem</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{r1} and {r2}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Variables r1 and r2 will not be used after this point.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r3</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">; </span><span style="color:#7F848E;font-style:italic">// no problem</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{r3}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>ZetCode 的文章把這個機制稱為 non-lexical lifetimes（NLL，非詞法生命週期）：編譯器看出 <code>r1</code> 與 <code>r2</code> 在第一個 <code>println!</code> 之後不再使用，所以後面的可變借用有效；如果在建立 <code>r3</code> 之後還用 <code>r1</code>，就會被拒絕。這個名詞出自非官方來源，官方 Rust Book 這一節只描述了行為。</p><figure class="svg-fig"><svg width="100%" height="auto" viewBox="0 0 800 366" xmlns="http://www.w3.org/2000/svg" role="img"><defs><marker id="arr-c06" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--muted)"/></marker></defs><g font-family="system-ui, sans-serif"><rect x="20" y="20" width="370" height="250" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><rect x="410" y="20" width="370" height="250" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="205" y="52" text-anchor="middle" font-size="17px" fill="var(--accent2)" font-weight="bold" >要嘛很多人一起讀</text><text x="595" y="52" text-anchor="middle" font-size="17px" fill="var(--accent)" font-weight="bold" >要嘛只有一個人能寫</text><rect x="50" y="80" width="100" height="36" rx="8" fill="var(--bg)" stroke="var(--accent2)" stroke-width="2"/><text x="100" y="105" text-anchor="middle" font-size="17px" fill="var(--text)" >&amp;T</text><path d="M150,98 L242,122" fill="none" stroke="var(--accent2)" stroke-width="2" marker-end="url(#arr-c06)"/><rect x="50" y="130" width="100" height="36" rx="8" fill="var(--bg)" stroke="var(--accent2)" stroke-width="2"/><text x="100" y="155" text-anchor="middle" font-size="17px" fill="var(--text)" >&amp;T</text><path d="M150,148 L242,150" fill="none" stroke="var(--accent2)" stroke-width="2" marker-end="url(#arr-c06)"/><rect x="50" y="180" width="100" height="36" rx="8" fill="var(--bg)" stroke="var(--accent2)" stroke-width="2"/><text x="100" y="205" text-anchor="middle" font-size="17px" fill="var(--text)" >&amp;T</text><path d="M150,198 L242,178" fill="none" stroke="var(--accent2)" stroke-width="2" marker-end="url(#arr-c06)"/><rect x="250" y="100" width="110" height="100" rx="8" fill="var(--bg)" stroke="var(--border)" stroke-width="2"/><text x="305" y="156" text-anchor="middle" font-size="17px" fill="var(--text)" >資料</text><text x="205" y="244" text-anchor="middle" font-size="15px" fill="var(--muted)" >只讀的人不會影響別人</text><rect x="430" y="130" width="130" height="40" rx="8" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/><text x="495" y="156" text-anchor="middle" font-size="17px" fill="var(--text)" >&amp;mut T</text><path d="M560,150 L632,150" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c06)"/><rect x="640" y="100" width="110" height="100" rx="8" fill="var(--bg)" stroke="var(--border)" stroke-width="2"/><text x="695" y="156" text-anchor="middle" font-size="17px" fill="var(--text)" >資料</text><text x="595" y="244" text-anchor="middle" font-size="15px" fill="var(--muted)" >不能有任何其他參考</text><rect x="20" y="294" width="760" height="52" rx="8" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/><text x="400" y="326" text-anchor="middle" font-size="17px" fill="var(--text)" font-weight="bold" >可變與不可變參考不能重疊，兩者擇一</text></g></svg><figcaption>圖 6-3：借用的契約，要嘛很多個 &amp;T 一起讀，要嘛只有一個 &amp;mut T 能寫（依官方 Rust Book 的說明繪製）</figcaption></figure><h2>懸空參考：編譯器保證不存在</h2><p>在有指標的語言裡，很容易不小心造出懸空指標（dangling pointer）：記憶體已經釋放並可能給了別人，指標卻還留著。Rust 的保證是：如果你持有某資料的參考，編譯器會確保資料不會比參考更早離開作用域。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>試圖回傳區域變數的參考（官方 Rust Book，無法編譯）</span><button class="cb-copy" data-code="fn main() {
+    let reference_to_nothing = dangle();
+}
+
+fn dangle() -> &amp;String { // dangle returns a reference to a String
+
+    let s = String::from(&quot;hello&quot;); // s is a new String
+
+    &amp;s // we return a reference to the String, s
+} // Here, s goes out of scope and is dropped, so its memory goes away.
+  // Danger!" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> reference_to_nothing</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> dangle</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> dangle</span><span style="color:#ABB2BF">() -> &#x26;</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF"> { </span><span style="color:#7F848E;font-style:italic">// dangle returns a reference to a String</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">); </span><span style="color:#7F848E;font-style:italic">// s is a new String</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    &#x26;</span><span style="color:#E06C75">s</span><span style="color:#7F848E;font-style:italic"> // we return a reference to the String, s</span></span>
+<span class="line"><span style="color:#ABB2BF">} </span><span style="color:#7F848E;font-style:italic">// Here, s goes out of scope and is dropped, so its memory goes away.</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">  // Danger!</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>編譯器輸出（官方 Rust Book）</span><button class="cb-copy" data-code="$ cargo run
+   Compiling ownership v0.1.0 (file:///projects/ownership)
+error[E0106]: missing lifetime specifier
+ --> src/main.rs:5:16
+  |
+5 | fn dangle() -> &amp;String {
+  |                ^ expected named lifetime parameter
+  |
+  = help: this function's return type contains a borrowed value, but there is no value for it to be borrowed from
+help: consider using the `'static` lifetime, but this is uncommon unless you're returning a borrowed value from a `const` or a `static`
+  |
+5 | fn dangle() -> &amp;'static String {
+  |                 +++++++
+help: instead, you are more likely to want to return an owned value
+  |
+5 - fn dangle() -> &amp;String {
+5 + fn dangle() -> String {
+  |
+
+For more information about this error, try `rustc --explain E0106`.
+error: could not compile `ownership` (bin &quot;ownership&quot;) due to 1 previous error" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> run</span></span>
+<span class="line"><span style="color:#61AFEF">   Compiling</span><span style="color:#98C379"> ownership</span><span style="color:#98C379"> v0.1.0</span><span style="color:#ABB2BF"> (file:///projects/ownership)</span></span>
+<span class="line"><span style="color:#61AFEF">error[E0106]:</span><span style="color:#98C379"> missing</span><span style="color:#98C379"> lifetime</span><span style="color:#98C379"> specifier</span></span>
+<span class="line"><span style="color:#61AFEF"> --</span><span style="color:#ABB2BF">> </span><span style="color:#98C379">src/main.rs:5:16</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">5</span><span style="color:#ABB2BF"> | </span><span style="color:#61AFEF">fn</span><span style="color:#98C379"> dangle</span><span style="color:#ABB2BF">() -> &#x26;</span><span style="color:#61AFEF">String</span><span style="color:#98C379"> {</span></span>
+<span class="line"><span style="color:#ABB2BF">  |                </span><span style="color:#61AFEF">^</span><span style="color:#98C379"> expected</span><span style="color:#98C379"> named</span><span style="color:#98C379"> lifetime</span><span style="color:#98C379"> parameter</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#98C379">  =</span><span style="color:#98C379"> help:</span><span style="color:#98C379"> this</span><span style="color:#98C379"> function's return type contains a borrowed value, but there is no value for it to be borrowed from</span></span>
+<span class="line"><span style="color:#98C379">help: consider using the `'static` </span><span style="color:#61AFEF">lifetime,</span><span style="color:#98C379"> but this is uncommon unless you're returning a borrowed value from a `const` or a `static`</span></span>
+<span class="line"><span style="color:#98C379">  |</span></span>
+<span class="line"><span style="color:#98C379">5 | fn dangle() -> &#x26;'static String {</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span><span style="color:#61AFEF">                 +++++++</span></span>
+<span class="line"><span style="color:#61AFEF">help:</span><span style="color:#98C379"> instead, you are more likely to want to return an owned value</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">5</span><span style="color:#98C379"> - fn dangle() -</span><span style="color:#ABB2BF">></span><span style="color:#98C379"> &#x26;</span><span style="color:#61AFEF">String</span><span style="color:#98C379"> {</span></span>
+<span class="line"><span style="color:#61AFEF">5</span><span style="color:#98C379"> + fn dangle() -</span><span style="color:#ABB2BF">></span><span style="color:#98C379"> String {</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">For</span><span style="color:#98C379"> more information about this error, try `</span><span style="color:#61AFEF">rustc</span><span style="color:#D19A66"> --explain</span><span style="color:#98C379"> E0106`</span><span style="color:#56B6C2">.</span></span>
+<span class="line"><span style="color:#61AFEF">error:</span><span style="color:#98C379"> could not compile `</span><span style="color:#61AFEF">ownership</span><span style="color:#98C379">` (</span><span style="color:#61AFEF">bin</span><span style="color:#98C379"> "ownership") </span><span style="color:#61AFEF">due</span><span style="color:#98C379"> to </span><span style="color:#D19A66">1</span><span style="color:#98C379"> previous error</span></span></code></pre></div></div><p>錯誤訊息提到「missing lifetime specifier」，那是下一章的主題；暫時忽略生命週期的部分，關鍵是這一句：函式的回傳型別含有借用的值，但沒有任何值可供借用。<code>s</code> 在 <code>dangle</code> 內建立，函式一結束就被釋放，回傳指向它的參考就會指向無效的 <code>String</code>。編譯器的建議之一是直接回傳擁有所有權的值：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>改成直接回傳 String（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let string = no_dangle();
+}
+
+fn no_dangle() -> String {
+    let s = String::from(&quot;hello&quot;);
+
+    s
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> no_dangle</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> no_dangle</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">    s</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h2>參考的兩條規則</h2><div class="call tip"><span class="ci">💡</span><div><strong>The Rules of References（官方 Rust Book）</strong><p>任一時間點，你可以擁有「一個可變參考」或「任意多個不可變參考」，兩者擇一；而參考必須永遠有效。</p></div></div><h2>實戰：迴圈裡常見的借用錯誤</h2><p>ZetCode 的文章指出一個新手常踩的坑：一邊走訪集合、一邊修改它。<code>s.chars()</code> 會回傳一個持有 <code>s</code> 不可變借用的迭代器，這個借用在整個迴圈期間都有效；迴圈內呼叫 <code>s.push(c)</code> 需要可變借用，於是被拒絕（錯誤碼同為 E0502）。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>迴圈中修改正在走訪的字串（ZetCode，無法編譯）</span><button class="cb-copy" data-code="// This code does NOT compile — shown for illustration only.
+
+fn main() {
+    let mut s = String::from(&quot;abc&quot;);
+    for c in s.chars() {
+        s.push(c); // ERROR: cannot borrow `s` as mutable
+                // because it is also borrowed as immutable
+    }
+    println!(&quot;{}&quot;, s);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#7F848E;font-style:italic">// This code does NOT compile — shown for illustration only.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"abc"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    for</span><span style="color:#E06C75"> c</span><span style="color:#C678DD"> in</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">chars</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#E06C75">        s</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">push</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">c</span><span style="color:#ABB2BF">); </span><span style="color:#7F848E;font-style:italic">// ERROR: cannot borrow `s` as mutable</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                // because it is also borrowed as immutable</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>修法依需求而定。想把每個字元重複兩次，可以把結果寫進另一個新字串；只想過濾字元，可以用 <code>retain</code>；對 <code>Vec</code> 則可以用索引，每次迭代都建立新的借用，而不是整個迴圈持有同一個。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>修法一：寫入新的 String（ZetCode）</span><button class="cb-copy" data-code="fn main() {
+    let s = String::from(&quot;abc&quot;);
+    let mut result = String::new();
+
+    for c in s.chars() {
+        result.push(c);
+        result.push(c);
+    }
+
+    println!(&quot;{}&quot;, result);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"abc"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    for</span><span style="color:#E06C75"> c</span><span style="color:#C678DD"> in</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">chars</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#E06C75">        result</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">push</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">c</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#E06C75">        result</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">push</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">c</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">result</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>修法二：用 retain 過濾（ZetCode）</span><button class="cb-copy" data-code="fn main() {
+    let mut s = String::from(&quot;a1b2c3&quot;);
+    s.retain(|c| c.is_alphabetic());
+    println!(&quot;{}&quot;, s);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"a1b2c3"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#E06C75">    s</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">retain</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">|</span><span style="color:#E06C75">c</span><span style="color:#56B6C2">|</span><span style="color:#E06C75"> c</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">is_alphabetic</span><span style="color:#ABB2BF">());</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>修法三：用索引走訪 Vec（ZetCode）</span><button class="cb-copy" data-code="fn main() {
+    let mut v = vec![1, 2, 3, 4];
+    for i in 0..v.len() {
+        v[i] *= 2; // fine: no iterator borrow
+    }
+    println!(&quot;{:?}&quot;, v);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> v</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">4</span><span style="color:#ABB2BF">];</span></span>
+<span class="line"><span style="color:#C678DD">    for</span><span style="color:#E06C75"> i</span><span style="color:#C678DD"> in</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF">..</span><span style="color:#E06C75">v</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#E06C75">        v</span><span style="color:#ABB2BF">[</span><span style="color:#E06C75">i</span><span style="color:#ABB2BF">] </span><span style="color:#56B6C2">*=</span><span style="color:#D19A66"> 2</span><span style="color:#ABB2BF">; </span><span style="color:#7F848E;font-style:italic">// fine: no iterator borrow</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{:?}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">v</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>ZetCode 補充了索引的限制：對 <code>Vec</code> 用索引沒問題，但 <code>String</code> 是 UTF-8 編碼，用位元組位置索引很脆弱，需要字元層級操作時改用 <code>char_indices()</code> 或收集成 <code>Vec&lt;char&gt;</code>。</p><h2>為什麼要這麼嚴？與其他語言對照</h2><p>iT 邦幫忙的文章用 Python／JavaScript 與 Go 做對照：在 Python 或 JavaScript 裡，共享是隱式的，你不知道有多少參考指向同一份資料，也不知道誰會在何時修改它；Go 透過指標讓共享變得顯式，但文章指出 Go 無法在編譯期阻止 data race。Rust 把共享變成「有契約的」：<code>&amp;T</code> 表示只想讀、<code>&amp;mut T</code> 表示要獨佔寫入、<code>T</code> 表示要取得所有權。</p><div class="call warn"><span class="ci">⚠️</span><div><strong>素材的限制</strong><p>stub 原先預告的 RefCell、Mutex 與內部可變性，本章素材並未提供，因此不在此展開；它們屬於「把借用檢查延到執行期」的工具，留待智慧指標與並行章節。</p></div></div><div class="call tip"><span class="ci">💡</span><div><strong>本章重點回顧</strong><p><code>&amp;</code> 借用不拿走所有權；<code>&amp;mut</code> 需要 <code>mut</code> 變數且同時只能存在一個；可變與不可變參考不能重疊；參考的範圍到最後一次使用為止；參考永遠不會懸空。</p></div></div><figure class="svg-fig"><img src="/rust/img/ch06/03-comparison-sharing-across-languages.png" alt="Python 與 JavaScript、Go、Rust 對共享資料的態度對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 6-4：不同語言對共享資料的態度：Rust 的嚴格換來編譯期保證</figcaption></figure><h2>下一章預告</h2><p>編譯器是怎麼知道「資料有沒有比參考活得久」？答案是每個參考都帶有生命週期。第 7 章會說明生命週期標註的語法、<code>longest</code> 函式為何需要標註，以及編譯器的省略規則。</p></div><nav class="cnav" data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" class="prev" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>← 上一章</span><span class="nt" data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a><a href="/rust/ch07-lifetimes" class="next" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>下一章 →</span><span class="nt" data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></nav></main></div><script>
+    // Theme
+    const html = document.documentElement;
+    const tt = document.getElementById('tt');
+    const isun = document.getElementById('isun');
+    const imoon = document.getElementById('imoon');
+    function syncIcons() {
+      const dk = html.classList.contains('dark');
+      isun.style.display = dk ? 'block' : 'none';
+      imoon.style.display = dk ? 'none' : 'block';
+    }
+    syncIcons();
+    tt?.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('cc-theme', html.classList.contains('dark') ? 'dark' : 'light');
+      syncIcons();
+    });
+
+    // Progress
+    const pb = document.getElementById('pb');
+    window.addEventListener('scroll', () => {
+      const t = document.documentElement.scrollHeight - window.innerHeight;
+      pb.style.width = t > 0 ? `${(window.scrollY / t) * 100}%` : '0%';
+    }, { passive: true });
+
+    // Sidebar part toggles
+    document.querySelectorAll('.pt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pid;
+        const list = document.querySelector(`[data-pl="${id}"]`);
+        btn.classList.toggle('open');
+        list?.classList.toggle('closed');
+      });
+    });
+
+    // Mobile menu
+    const sb = document.getElementById('sb');
+    const ov = document.getElementById('ov');
+    const mb = document.getElementById('mbtn');
+    const open = () => { sb.classList.add('open'); ov.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close = () => { sb.classList.remove('open'); ov.classList.remove('open'); document.body.style.overflow=''; };
+    mb?.addEventListener('click', open);
+    ov?.addEventListener('click', close);
+  </script></body></html>

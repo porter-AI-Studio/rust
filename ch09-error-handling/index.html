@@ -1,0 +1,514 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-ccykbmgk><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>錯誤處理：Result、panic 與測試 | Rust 實戰指南</title><meta name="description" content="Result、Option、? 運算子、自訂錯誤型別、thiserror/anyhow 選擇、panic vs 錯誤處理策略、單元測試與整合測試組織、測試雙模式。"><link rel="icon" href="/rust/favicon.svg" type="image/svg+xml"><script>
+    (function () {
+      const s = localStorage.getItem('cc-theme');
+      const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark');
+    })();
+  </script><link rel="stylesheet" href="/rust/_astro/DocsLayout.9CQhNdRI.css"><style>.cb-wrap[data-astro-cid-c6nuo4je]{margin-bottom:1.25rem}.cb-bar[data-astro-cid-c6nuo4je]{background:#1a1a2e;border:1px solid #ffffff14;border-bottom-color:#ffffff0d;border-radius:6px 6px 0 0;justify-content:space-between;align-items:center;min-height:1.8rem;padding:.18rem .5rem .18rem .75rem;display:flex}.cb-label[data-astro-cid-c6nuo4je]{color:#a6adc8;letter-spacing:.04em;font-family:Fira Code,Cascadia Code,Consolas,monospace;font-size:.73rem}.cb-inner[data-astro-cid-c6nuo4je] pre{border-radius:0 0 8px 8px!important;margin-bottom:0!important}.cb-copy[data-astro-cid-c6nuo4je]{color:#888;cursor:pointer;background:#ffffff14;border:1px solid #ffffff1f;border-radius:4px;flex-shrink:0;padding:.15rem .55rem;font-size:.7rem;transition:all .15s}.cb-copy[data-astro-cid-c6nuo4je]:hover{color:#fff;background:#ffffff2e}.cb-copy[data-astro-cid-c6nuo4je].copied{color:#4ec9b0;border-color:#4ec9b0}
+</style></head><body data-astro-cid-ccykbmgk><div id="pb" data-astro-cid-ccykbmgk></div><header data-astro-cid-ccykbmgk><div class="hi" data-astro-cid-ccykbmgk><div class="hl" data-astro-cid-ccykbmgk><button id="mbtn" class="ibtn" aria-label="選單" data-astro-cid-ccykbmgk><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" data-astro-cid-ccykbmgk></path></svg></button><a href="/rust/" class="site-name" data-astro-cid-ccykbmgk><span class="logo" data-astro-cid-ccykbmgk>RS</span>&nbsp;&nbsp;Rust 實戰指南</a></div><div class="hr" data-astro-cid-ccykbmgk><button id="tt" class="ibtn" aria-label="切換主題" data-astro-cid-ccykbmgk><svg id="isun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" data-astro-cid-ccykbmgk></path></svg><svg id="imoon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" data-astro-cid-ccykbmgk></path></svg></button></div></div></header><div id="layout" data-astro-cid-ccykbmgk><nav id="sb" data-astro-cid-ccykbmgk><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="0" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 0：前言</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="0" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/preface" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>0.</span><span data-astro-cid-ccykbmgk>前言</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="1" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 1：認識 Rust</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="1" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>1.</span><span data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch02-setup-cargo" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>2.</span><span data-astro-cid-ccykbmgk>安裝與 Cargo：第一個專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>3.</span><span data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>4.</span><span data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="2" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 2：所有權：Rust 的核心</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="2" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>5.</span><span data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>6.</span><span data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch07-lifetimes" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>7.</span><span data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>8.</span><span data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="3" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 3：型別系統與錯誤處理</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="3" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" class="active" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>9.</span><span data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>10.</span><span data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>11.</span><span data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="4" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 4：並行與非同步</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="4" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch12-concurrency" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>12.</span><span data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>13.</span><span data-astro-cid-ccykbmgk>async/await 基礎</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>14.</span><span data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="5" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 5：工程實務與生態</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="5" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch15-idioms-and-project" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>15.</span><span data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch16-systems-linux-embedded" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>16.</span><span data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch17-reality-check" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>17.</span><span data-astro-cid-ccykbmgk>現實檢查：批評、代價與重寫案例</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="6" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 6：附錄</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="6" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/glossary" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>18.</span><span data-astro-cid-ccykbmgk>名詞解釋</span></a></li></ul></div></nav><div id="ov" data-astro-cid-ccykbmgk></div><main data-astro-cid-ccykbmgk><div class="cb" data-astro-cid-ccykbmgk><span class="clabel">第 9 章 · Part 3：型別系統與錯誤處理</span><h1>錯誤處理：Result、panic 與測試</h1><p class="cdesc">把「可能失敗」寫進回傳型別，讓編譯器的型別檢查與警告促使你檢視失敗路徑，再用測試證明你處理對了。</p><p>寫過 TypeScript 的人，對 <code>try/catch</code> 一定不陌生：任何函式都可能丟出例外，但函式簽名完全不會告訴你。Rust 沒有例外機制，它把錯誤分成兩類：可以恢復的錯誤用 <code>Result&lt;T, E&gt;</code> 回傳，無法恢復的錯誤用 <code>panic!</code> 讓程式停下來。本章依序談 <code>Result</code> 的各種處理方式、<code>?</code> 運算子、什麼時候該 panic、自訂錯誤型別的常見做法，最後用 Rust 內建的測試功能驗證這些行為。本章範例除特別標明外，皆取自 Rust 官方文件 The Rust Programming Language（以下簡稱 Rust Book）。</p><h2>Result：把失敗放進回傳型別</h2><p><code>Result</code> 是一個只有兩個變體的列舉，<code>Ok</code> 裝成功的值，<code>Err</code> 裝錯誤資訊。<code>T</code> 與 <code>E</code> 是泛型參數，下一章會詳細說明。像 <code>File::open</code> 這類可能失敗的函式，回傳型別就是 <code>Result&lt;std::fs::File, std::io::Error&gt;</code>，呼叫端不處理就拿不到檔案控制代碼。</p><p>最基本的處理方式是 <code>match</code>。官方範例讓檔案不存在時（<code>ErrorKind::NotFound</code>）建立新檔，其他錯誤才 panic：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 9-5：依錯誤種類分別處理</span><button class="cb-copy" data-code="use std::fs::File;
+use std::io::ErrorKind;
+
+fn main() {
+    let greeting_file_result = File::open(&quot;hello.txt&quot;);
+
+    let greeting_file = match greeting_file_result {
+        Ok(file) => file,
+        Err(error) => match error.kind() {
+            ErrorKind::NotFound => match File::create(&quot;hello.txt&quot;) {
+                Ok(fc) => fc,
+                Err(e) => panic!(&quot;Problem creating the file: {e:?}&quot;),
+            },
+            _ => {
+                panic!(&quot;Problem opening the file: {error:?}&quot;);
+            }
+        },
+    };
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">fs</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">File</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">io</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">ErrorKind</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> greeting_file_result</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> File</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">open</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello.txt"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> greeting_file</span><span style="color:#56B6C2"> =</span><span style="color:#C678DD"> match</span><span style="color:#E06C75"> greeting_file_result</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">        Ok</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">file</span><span style="color:#ABB2BF">) => </span><span style="color:#E06C75">file</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E5C07B">        Err</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">error</span><span style="color:#ABB2BF">) => </span><span style="color:#C678DD">match</span><span style="color:#E06C75"> error</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">kind</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#E5C07B">            ErrorKind</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">NotFound</span><span style="color:#ABB2BF"> => </span><span style="color:#C678DD">match</span><span style="color:#E5C07B"> File</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">create</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello.txt"</span><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#E5C07B">                Ok</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">fc</span><span style="color:#ABB2BF">) => </span><span style="color:#E06C75">fc</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E5C07B">                Err</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">e</span><span style="color:#ABB2BF">) => </span><span style="color:#61AFEF">panic!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Problem creating the file: {e:?}"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">            },</span></span>
+<span class="line"><span style="color:#E06C75">            _</span><span style="color:#ABB2BF"> => {</span></span>
+<span class="line"><span style="color:#61AFEF">                panic!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Problem opening the file: {error:?}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">            }</span></span>
+<span class="line"><span style="color:#ABB2BF">        },</span></span>
+<span class="line"><span style="color:#ABB2BF">    };</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><script type="module">document.querySelectorAll(`.cb-copy`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.code;t&&navigator.clipboard.writeText(t).then(()=>{e.textContent=`已複製!`,e.classList.add(`copied`),setTimeout(()=>{e.textContent=`複製`,e.classList.remove(`copied`)},2e3)})})});</script><p>巢狀 <code>match</code> 很囉唆。Rust Book 指出 <code>Result</code> 有許多搭配閉包使用的方法，可以寫得更精簡（閉包在下一章介紹）：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：用 unwrap_or_else 改寫，行為與 Listing 9-5 相同</span><button class="cb-copy" data-code="use std::fs::File;
+use std::io::ErrorKind;
+
+fn main() {
+    let greeting_file = File::open(&quot;hello.txt&quot;).unwrap_or_else(|error| {
+        if error.kind() == ErrorKind::NotFound {
+            File::create(&quot;hello.txt&quot;).unwrap_or_else(|error| {
+                panic!(&quot;Problem creating the file: {error:?}&quot;);
+            })
+        } else {
+            panic!(&quot;Problem opening the file: {error:?}&quot;);
+        }
+    });
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">fs</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">File</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">io</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">ErrorKind</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> greeting_file</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> File</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">open</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello.txt"</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap_or_else</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">|</span><span style="color:#E06C75">error</span><span style="color:#56B6C2">|</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        if</span><span style="color:#E06C75"> error</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">kind</span><span style="color:#ABB2BF">() </span><span style="color:#56B6C2">==</span><span style="color:#E5C07B"> ErrorKind</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">NotFound</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">            File</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">create</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello.txt"</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap_or_else</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">|</span><span style="color:#E06C75">error</span><span style="color:#56B6C2">|</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">                panic!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Problem creating the file: {error:?}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">            })</span></span>
+<span class="line"><span style="color:#ABB2BF">        } </span><span style="color:#C678DD">else</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">            panic!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Problem opening the file: {error:?}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#ABB2BF">    });</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h3>unwrap 與 expect：明知會 panic 的捷徑</h3><p><code>unwrap</code> 在 <code>Ok</code> 時回傳內部的值，在 <code>Err</code> 時直接 <code>panic!</code>。<code>expect</code> 做同樣的事，但可以自訂 panic 訊息。Rust Book 的說法是：在正式品質的程式碼裡，多數 Rustacean 會選 <code>expect</code> 並寫清楚「為什麼這裡應該永遠成功」，這樣假設被推翻時，除錯資訊比較完整。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：expect 自訂 panic 訊息</span><button class="cb-copy" data-code="use std::fs::File;
+
+fn main() {
+    let greeting_file = File::open(&quot;hello.txt&quot;)
+        .expect(&quot;hello.txt should be included in this project&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">fs</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">File</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> greeting_file</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> File</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">open</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello.txt"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">        .</span><span style="color:#61AFEF">expect</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello.txt should be included in this project"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><figure class="svg-fig"><img src="/rust/img/ch09/01-comparison-ts-try-catch-vs-result.png" alt="TypeScript try/catch 與 Rust Result 的對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 9-1：TypeScript 的失敗藏在簽名之外，Rust 把失敗寫進 Result 回傳型別</figcaption></figure><h2>錯誤傳播與 ? 運算子</h2><p>函式內部呼叫了可能失敗的操作時，常見做法不是自己處理，而是把錯誤交給呼叫端決定，這叫錯誤傳播（propagating）。先看手動寫法，用 <code>match</code> 提早 <code>return Err(e)</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 9-6：用 match 傳播錯誤</span><button class="cb-copy" data-code="use std::fs::File;
+use std::io::{self, Read};
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    let username_file_result = File::open(&quot;hello.txt&quot;);
+
+    let mut username_file = match username_file_result {
+        Ok(file) => file,
+        Err(e) => return Err(e),
+    };
+
+    let mut username = String::new();
+
+    match username_file.read_to_string(&amp;mut username) {
+        Ok(_) => Ok(username),
+        Err(e) => Err(e),
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">fs</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">File</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">io</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Read</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> read_username_from_file</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">io</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Error</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> username_file_result</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> File</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">open</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello.txt"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> username_file</span><span style="color:#56B6C2"> =</span><span style="color:#C678DD"> match</span><span style="color:#E06C75"> username_file_result</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">        Ok</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">file</span><span style="color:#ABB2BF">) => </span><span style="color:#E06C75">file</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E5C07B">        Err</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">e</span><span style="color:#ABB2BF">) => </span><span style="color:#C678DD">return</span><span style="color:#E5C07B"> Err</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">e</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">    };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> username</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    match</span><span style="color:#E06C75"> username_file</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">read_to_string</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E06C75"> username</span><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#E5C07B">        Ok</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">_</span><span style="color:#ABB2BF">) => </span><span style="color:#E5C07B">Ok</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">username</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">        Err</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">e</span><span style="color:#ABB2BF">) => </span><span style="color:#E5C07B">Err</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">e</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>這個模式太常見，Rust 提供 <code>?</code> 運算子。<code>?</code> 放在 <code>Result</code> 後面：值是 <code>Ok</code> 就取出內部的值繼續執行；是 <code>Err</code> 就當作 <code>return</code> 讓整個函式提早回傳該錯誤。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 9-7：用 ? 運算子</span><button class="cb-copy" data-code="use std::fs::File;
+use std::io::{self, Read};
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    let mut username_file = File::open(&quot;hello.txt&quot;)?;
+    let mut username = String::new();
+    username_file.read_to_string(&amp;mut username)?;
+    Ok(username)
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">fs</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">File</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">io</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Read</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> read_username_from_file</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">io</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Error</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> username_file</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> File</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">open</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello.txt"</span><span style="color:#ABB2BF">)?;</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> username</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#E06C75">    username_file</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">read_to_string</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E06C75"> username</span><span style="color:#ABB2BF">)?;</span></span>
+<span class="line"><span style="color:#E5C07B">    Ok</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">username</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>還可以在 <code>?</code> 之後直接串接方法呼叫，Rust Book 的 Listing 9-8 如下：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 9-8：? 之後串接方法</span><button class="cb-copy" data-code="use std::fs::File;
+use std::io::{self, Read};
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    let mut username = String::new();
+
+    File::open(&quot;hello.txt&quot;)?.read_to_string(&amp;mut username)?;
+
+    Ok(username)
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">fs</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">File</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">io</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Read</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> read_username_from_file</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">io</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Error</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> username</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E5C07B">    File</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">open</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello.txt"</span><span style="color:#ABB2BF">)?.</span><span style="color:#61AFEF">read_to_string</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E06C75"> username</span><span style="color:#ABB2BF">)?;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E5C07B">    Ok</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">username</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>讀檔成字串太常用，標準函式庫其實有 <code>fs::read_to_string</code>，一行就能完成（Listing 9-9）：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 9-9</span><button class="cb-copy" data-code="use std::fs;
+use std::io;
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    fs::read_to_string(&quot;hello.txt&quot;)
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::fs;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::io;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> read_username_from_file</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">io</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Error</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#E5C07B">    fs</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">read_to_string</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello.txt"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="call info"><span class="ci">ℹ️</span><div><strong>? 與 match 的差別：From 轉換</strong><p>被 <code>?</code> 處理的錯誤值會經過標準函式庫 <code>From</code> trait 的 <code>from</code> 函式，轉換成目前函式回傳型別所宣告的錯誤型別。Rust Book 舉例：若自訂 <code>OurError</code> 並實作 <code>impl From&lt;io::Error&gt; for OurError</code>，函式內的 <code>?</code> 就會自動轉換，不必多寫程式碼。這是下面自訂錯誤型別的基礎。</p></div></div><h3>? 能用在哪裡</h3><p><code>?</code> 只能用在回傳型別與它相容的函式裡。如果在回傳 <code>()</code> 的 <code>main</code> 裡對 <code>File::open</code> 使用 <code>?</code>，編譯器會報錯（Rust Book 的輸出節錄）：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 9-10 的編譯錯誤（節錄）</span><button class="cb-copy" data-code="error[E0277]: the `?` operator can only be used in a function that returns `Result` or `Option` (or another type that implements `FromResidual`)
+ --> src/main.rs:4:48
+  |
+3 | fn main() {
+  | --------- this function should return `Result` or `Option` to accept `?`
+4 |     let greeting_file = File::open(&quot;hello.txt&quot;)?;
+  |                                                ^ cannot use the `?` operator in a function that returns `()`" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>error[E0277]: the `?` operator can only be used in a function that returns `Result` or `Option` (or another type that implements `FromResidual`)</span></span>
+<span class="line"><span> --> src/main.rs:4:48</span></span>
+<span class="line"><span>  |</span></span>
+<span class="line"><span>3 | fn main() {</span></span>
+<span class="line"><span>  | --------- this function should return `Result` or `Option` to accept `?`</span></span>
+<span class="line"><span>4 |     let greeting_file = File::open("hello.txt")?;</span></span>
+<span class="line"><span>  |                                                ^ cannot use the `?` operator in a function that returns `()`</span></span></code></pre></div></div><p>解法有兩種：把函式回傳型別改成相容的型別，或用 <code>match</code>／<code>Result</code> 的方法就地處理。<code>?</code> 也能用在 <code>Option</code>：遇到 <code>None</code> 就提早回傳 <code>None</code>。但 <code>Result</code> 與 <code>Option</code> 不會自動互轉，需要的話用 <code>Result</code> 的 <code>ok</code> 方法或 <code>Option</code> 的 <code>ok_or</code> 方法明確轉換。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 9-11：對 Option 使用 ?</span><button class="cb-copy" data-code="fn last_char_of_first_line(text: &amp;str) -> Option<char> {
+    text.lines().next()?.chars().last()
+}
+
+fn main() {
+    assert_eq!(
+        last_char_of_first_line(&quot;Hello, world\nHow are you today?&quot;),
+        Some('d')
+    );
+
+    assert_eq!(last_char_of_first_line(&quot;&quot;), None);
+    assert_eq!(last_char_of_first_line(&quot;\nhi&quot;), None);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> last_char_of_first_line</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">text</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">Option</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">char</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#E06C75">    text</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">lines</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">next</span><span style="color:#ABB2BF">()?.</span><span style="color:#61AFEF">chars</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">last</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#61AFEF">    assert_eq!</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#61AFEF">        last_char_of_first_line</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Hello, world</span><span style="color:#56B6C2">\n</span><span style="color:#98C379">How are you today?"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">        Some</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">'d'</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">    );</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    assert_eq!</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">last_char_of_first_line</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">""</span><span style="color:#ABB2BF">), </span><span style="color:#E5C07B">None</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">    assert_eq!</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">last_char_of_first_line</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"</span><span style="color:#56B6C2">\n</span><span style="color:#98C379">hi"</span><span style="color:#ABB2BF">), </span><span style="color:#E5C07B">None</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>想在 <code>main</code> 裡使用 <code>?</code>，可以讓 <code>main</code> 回傳 <code>Result&lt;(), Box&lt;dyn Error&gt;&gt;</code>。<code>Box&lt;dyn Error&gt;</code> 在 Rust Book 中被解釋為「任何一種錯誤」，這是 trait object，後續章節會再談。<code>main</code> 回傳 <code>Ok(())</code> 時程式以 0 結束，回傳 <code>Err</code> 時以非零值結束，與 C 程式的慣例一致。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 9-12：main 回傳 Result</span><button class="cb-copy" data-code="use std::error::Error;
+use std::fs::File;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let greeting_file = File::open(&quot;hello.txt&quot;)?;
+
+    Ok(())
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">error</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Error</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">fs</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">File</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;(), </span><span style="color:#E5C07B">Box</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#C678DD">dyn</span><span style="color:#E5C07B"> Error</span><span style="color:#ABB2BF">>> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> greeting_file</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> File</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">open</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello.txt"</span><span style="color:#ABB2BF">)?;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E5C07B">    Ok</span><span style="color:#ABB2BF">(())</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><figure class="svg-fig"><img src="/rust/img/ch09/02-flowchart-question-mark-operator.png" alt="? 運算子的 Ok 與 Err 兩條分支與 From 轉換流程" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 9-2：? 運算子的執行路徑：Ok 繼續、Err 經 From 轉換後提早回傳</figcaption></figure><h2>panic 還是 Result：怎麼決定</h2><p>Rust Book 的建議是：定義可能失敗的函式時，回傳 <code>Result</code> 是好的預設選擇，因為你把「這個錯誤能不能恢復」的決定權交給呼叫端；一旦 panic，呼叫端就沒有選擇了。以下情境適合 panic（或 <code>unwrap</code>／<code>expect</code>）：</p><ul><li><strong>範例、原型與測試</strong>：範例裡的 <code>unwrap</code> 代表「這裡之後要換成真正的錯誤處理」；測試中的 panic 本來就是標記失敗的方式。</li><li><strong>你比編譯器掌握更多資訊</strong>：例如解析寫死的合法 IP 字串，編譯器仍會要求處理 <code>Result</code>，這時用 <code>expect</code> 並寫明理由。</li><li><strong>違反契約或可能造成安全風險</strong>：標準函式庫在越界存取記憶體時 panic，就是因為這是常見的安全問題，且代表呼叫端程式有 bug。</li></ul><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：明確知道字串合法時用 expect 並寫明理由</span><button class="cb-copy" data-code="fn main() {
+    use std::net::IpAddr;
+
+    let home: IpAddr = &quot;127.0.0.1&quot;
+        .parse()
+        .expect(&quot;Hardcoded IP address should be valid&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">net</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">IpAddr</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> home</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">IpAddr</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "127.0.0.1"</span></span>
+<span class="line"><span style="color:#ABB2BF">        .</span><span style="color:#61AFEF">parse</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">        .</span><span style="color:#61AFEF">expect</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Hardcoded IP address should be valid"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>相反地，預期會發生的失敗（Rust Book 舉例：解析器收到格式錯誤的資料、HTTP 請求回傳表示被限速的狀態）應該回傳 <code>Result</code>。</p><figure class="svg-fig"><svg width="100%" height="auto" viewBox="0 0 800 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="panic 還是 Result 的決策流程">
+<defs>
+<marker id="arr-c09" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--muted)" /></marker>
+</defs>
+<g font-family="system-ui, sans-serif">
+<rect x="250" y="10" width="300" height="44" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="400" y="38" text-anchor="middle" font-size="17px" fill="var(--text)">函式可能失敗</text>
+<path d="M 400 54 L 400 76" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr-c09)" />
+<rect x="230" y="84" width="340" height="50" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="400" y="114" text-anchor="middle" font-size="17px" fill="var(--text)">這個失敗是預期會發生的嗎？</text>
+<path d="M 330 134 L 330 160 L 200 160 L 200 182" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arr-c09)" />
+<path d="M 470 134 L 470 160 L 600 160 L 600 182" fill="none" stroke="var(--accent2)" stroke-width="1.5" marker-end="url(#arr-c09)" />
+<text x="262" y="152" text-anchor="middle" font-size="15px" fill="var(--muted)">是</text>
+<text x="538" y="152" text-anchor="middle" font-size="15px" fill="var(--muted)">否</text>
+<rect x="30" y="190" width="340" height="70" rx="8" fill="var(--bg2)" stroke="var(--accent)" stroke-width="2" />
+<text x="200" y="218" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">回傳 Result&lt;T, E&gt;</text>
+<text x="200" y="244" text-anchor="middle" font-size="15px" fill="var(--muted)">決定權交給呼叫端</text>
+<rect x="430" y="190" width="340" height="70" rx="8" fill="var(--bg2)" stroke="var(--accent2)" stroke-width="2" />
+<text x="600" y="218" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">panic!</text>
+<text x="600" y="244" text-anchor="middle" font-size="15px" fill="var(--muted)">呼叫端沒有選擇</text>
+<path d="M 200 260 L 200 282" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr-c09)" />
+<path d="M 600 260 L 600 282" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr-c09)" />
+<rect x="30" y="290" width="340" height="120" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="200" y="318" text-anchor="middle" font-size="16px" font-weight="700" fill="var(--text)">呼叫端的處理方式</text>
+<text x="200" y="348" text-anchor="middle" font-size="15px" fill="var(--text)">match 就地處理</text>
+<text x="200" y="374" text-anchor="middle" font-size="15px" fill="var(--text)">? 運算子往上傳播（經 From 轉換）</text>
+<text x="200" y="400" text-anchor="middle" font-size="15px" fill="var(--text)">unwrap_or_else 搭配閉包</text>
+<rect x="430" y="290" width="340" height="120" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="600" y="318" text-anchor="middle" font-size="16px" font-weight="700" fill="var(--text)">適合 panic 或 unwrap／expect</text>
+<text x="600" y="348" text-anchor="middle" font-size="15px" fill="var(--text)">範例、原型與測試</text>
+<text x="600" y="374" text-anchor="middle" font-size="15px" fill="var(--text)">你比編譯器掌握更多資訊</text>
+<text x="600" y="400" text-anchor="middle" font-size="15px" fill="var(--text)">違反契約或可能造成安全風險</text>
+</g>
+</svg><figcaption>圖 9-3：panic 還是 Result 的決策流程（依 Rust Book 的建議整理）</figcaption></figure><h3>用型別取代執行期檢查</h3><p>Rust Book 進一步建議善用型別系統：參數若是具體型別而非 <code>Option</code>，函式內就不必處理 <code>None</code>；用 <code>u32</code> 就保證不是負數。更進一步，可以建立自訂型別，只在建構函式驗證一次。下面的 <code>Guess</code> 欄位是私有的，外部只能透過 <code>Guess::new</code> 建立，因此任何拿到 <code>Guess</code> 的函式都能確信值在 1 到 100 之間：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 9-13：Guess 型別</span><button class="cb-copy" data-code="pub struct Guess {
+    value: i32,
+}
+
+impl Guess {
+    pub fn new(value: i32) -> Guess {
+        if value < 1 || value > 100 {
+            panic!(&quot;Guess value must be between 1 and 100, got {value}.&quot;);
+        }
+
+        Guess { value }
+    }
+
+    pub fn value(&amp;self) -> i32 {
+        self.value
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> struct</span><span style="color:#E5C07B"> Guess</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    value</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#E5C07B"> Guess</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> new</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">value</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">Guess</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        if</span><span style="color:#E06C75"> value</span><span style="color:#56B6C2"> &#x3C;</span><span style="color:#D19A66"> 1</span><span style="color:#56B6C2"> ||</span><span style="color:#E06C75"> value</span><span style="color:#56B6C2"> ></span><span style="color:#D19A66"> 100</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">            panic!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Guess value must be between 1 and 100, got {value}."</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E5C07B">        Guess</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">value</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> value</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">        self</span><span style="color:#ABB2BF">.value</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h2>自訂錯誤型別：thiserror 與 anyhow</h2><p>當函式可能因為多種原因失敗時，常見做法是定義一個列舉，每個變體代表一類錯誤，並實作 <code>From</code> 讓 <code>?</code> 自動轉換。社群有兩個常用 crate 簡化這件事。下面取自一份第三方整理的 Rust 慣用模式文件（ECC 的 rust-patterns skill，簡體中文版），其建議是：函式庫用 <code>thiserror</code> 定義具型別的錯誤，應用程式用 <code>anyhow</code> 做彈性的錯誤處理。<code>#[from]</code> 屬性會產生對應的 <code>From</code> 轉換。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>取自 ECC rust-patterns 素材（第三方整理，非官方文件）</span><button class="cb-copy" data-code="// Library code: structured, typed errors
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum StorageError {
+    #[error(&quot;record not found: {id}&quot;)]
+    NotFound { id: String },
+    #[error(&quot;connection failed&quot;)]
+    Connection(#[from] std::io::Error),
+    #[error(&quot;invalid data: {0}&quot;)]
+    InvalidData(String),
+}
+
+// Application code: flexible error handling
+use anyhow::{bail, Result};
+
+fn run() -> Result<()> {
+    let config = load_config(&quot;app.toml&quot;)?;
+    if config.workers == 0 {
+        bail!(&quot;worker count must be > 0&quot;);
+    }
+    Ok(())
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#7F848E;font-style:italic">// Library code: structured, typed errors</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> thiserror</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Error</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[derive(</span><span style="color:#E5C07B">Debug</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Error</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> enum</span><span style="color:#E5C07B"> StorageError</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#ABB2BF">    #[error(</span><span style="color:#98C379">"record not found: {id}"</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#E5C07B">    NotFound</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">id</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF"> },</span></span>
+<span class="line"><span style="color:#ABB2BF">    #[error(</span><span style="color:#98C379">"connection failed"</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#61AFEF">    Connection</span><span style="color:#ABB2BF">(#[from] </span><span style="color:#E5C07B">std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">io</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Error</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">    #[error(</span><span style="color:#98C379">"invalid data: {0}"</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#61AFEF">    InvalidData</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// Application code: flexible error handling</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> anyhow</span><span style="color:#ABB2BF">::{bail, </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> run</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;()> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> config</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> load_config</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"app.toml"</span><span style="color:#ABB2BF">)?;</span></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#E06C75"> config</span><span style="color:#ABB2BF">.workers </span><span style="color:#56B6C2">==</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        bail!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"worker count must be > 0"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#E5C07B">    Ok</span><span style="color:#ABB2BF">(())</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="call warn"><span class="ci">⚠️</span><div><strong>範例不是完整可編譯程式</strong><p>上例中的 <code>load_config</code> 與 <code>config.workers</code> 在素材另一段定義，這裡沒有收錄；thiserror 與 anyhow 的 API 細節本章未另行查證官方文件（docs.rs），實際使用前請以其文件為準。</p></div></div><figure class="svg-fig"><img src="/rust/img/ch09/03-comparison-thiserror-vs-anyhow.png" alt="函式庫搭配 thiserror 與應用程式搭配 anyhow 的對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 9-4：函式庫與應用程式的錯誤處理分工：thiserror 與 anyhow（第三方整理的做法）</figcaption></figure><h2>用測試驗證錯誤處理</h2><p>測試就是以 <code>#[test]</code> 標記的函式，通常做三件事：準備資料、執行要測的程式碼、斷言結果。<code>cargo new adder --lib</code> 建立函式庫專案時，會自動產生 <code>tests</code> 模組與一個範例測試：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 11-1：cargo new 自動產生的測試</span><button class="cb-copy" data-code="pub fn add(left: u64, right: u64) -> u64 {
+    left + right
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let result = add(2, 2);
+        assert_eq!(result, 4);
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> add</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">left</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">right</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    left</span><span style="color:#ABB2BF"> + </span><span style="color:#E06C75">right</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[cfg(test)]</span></span>
+<span class="line"><span style="color:#C678DD">mod</span><span style="color:#ABB2BF"> tests {</span></span>
+<span class="line"><span style="color:#C678DD">    use</span><span style="color:#E5C07B;font-style:italic"> super</span><span style="color:#ABB2BF">::*;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    #[test]</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> it_works</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> add</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">        assert_eq!</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">result</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">4</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>用 <code>cargo test</code> 執行，每個測試會在新的執行緒中跑，只要該執行緒 panic 就標記為失敗：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 11-2：cargo test 輸出（略去 Doc-tests 區段）</span><button class="cb-copy" data-code="$ cargo test
+   Compiling adder v0.1.0 (file:///projects/adder)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.57s
+     Running unittests src/lib.rs (target/debug/deps/adder-01ad14159ff659ab)
+
+running 1 test
+test tests::it_works ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> test</span></span>
+<span class="line"><span style="color:#61AFEF">   Compiling</span><span style="color:#98C379"> adder</span><span style="color:#98C379"> v0.1.0</span><span style="color:#ABB2BF"> (file:///projects/adder)</span></span>
+<span class="line"><span style="color:#61AFEF">    Finished</span><span style="color:#98C379"> `</span><span style="color:#56B6C2">test</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> profile</span><span style="color:#ABB2BF"> [unoptimized </span><span style="color:#98C379">+</span><span style="color:#98C379"> debuginfo]</span><span style="color:#98C379"> target</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">s</span><span style="color:#ABB2BF">) </span><span style="color:#98C379">in</span><span style="color:#98C379"> 0.57s</span></span>
+<span class="line"><span style="color:#61AFEF">     Running</span><span style="color:#98C379"> unittests</span><span style="color:#98C379"> src/lib.rs</span><span style="color:#ABB2BF"> (target/debug/deps/adder-01ad14159ff659ab)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">running</span><span style="color:#D19A66"> 1</span><span style="color:#98C379"> test</span></span>
+<span class="line"><span style="color:#56B6C2">test</span><span style="color:#98C379"> tests::it_works</span><span style="color:#98C379"> ...</span><span style="color:#98C379"> ok</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#56B6C2">test</span><span style="color:#98C379"> result:</span><span style="color:#98C379"> ok.</span><span style="color:#D19A66"> 1</span><span style="color:#98C379"> passed</span><span style="color:#ABB2BF">; </span><span style="color:#61AFEF">0</span><span style="color:#98C379"> failed</span><span style="color:#ABB2BF">; </span><span style="color:#61AFEF">0</span><span style="color:#98C379"> ignored</span><span style="color:#ABB2BF">; </span><span style="color:#61AFEF">0</span><span style="color:#98C379"> measured</span><span style="color:#ABB2BF">; </span><span style="color:#61AFEF">0</span><span style="color:#98C379"> filtered</span><span style="color:#98C379"> out</span><span style="color:#ABB2BF">; </span><span style="color:#61AFEF">finished</span><span style="color:#98C379"> in</span><span style="color:#98C379"> 0.00s</span></span></code></pre></div></div><h3>斷言巨集</h3><p><code>assert!</code> 檢查布林條件，<code>assert_eq!</code> 與 <code>assert_ne!</code> 比較兩個值是否相等、不相等。它們用 <code>==</code> 與 <code>!=</code> 比較，失敗時以除錯格式印出兩邊的值，所以比較的型別必須實作 <code>PartialEq</code> 與 <code>Debug</code>。Rust 稱兩邊為 <code>left</code> 與 <code>right</code>，不分「預期值」與「實際值」，順序不影響結果。失敗時的輸出像這樣：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：assert_eq! 失敗輸出（節錄）</span><button class="cb-copy" data-code="---- tests::it_adds_two stdout ----
+thread 'tests::it_adds_two' (6020955) panicked at src/lib.rs:12:9:
+assertion `left == right` failed
+  left: 5
+ right: 4" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>---- tests::it_adds_two stdout ----</span></span>
+<span class="line"><span>thread 'tests::it_adds_two' (6020955) panicked at src/lib.rs:12:9:</span></span>
+<span class="line"><span>assertion `left == right` failed</span></span>
+<span class="line"><span>  left: 5</span></span>
+<span class="line"><span> right: 4</span></span></code></pre></div></div><p>這三個巨集都可以在必要參數之後附上自訂訊息，內容會交給 <code>format!</code> 處理。</p><h3>should_panic：測試「應該失敗」的路徑</h3><p>回到前面的 <code>Guess</code>，要驗證超出範圍時真的會 panic，可以在 <code>#[test]</code> 後面加 <code>#[should_panic]</code>。單用 <code>should_panic</code> 不夠精確，因為其他原因造成的 panic 也會通過；加上 <code>expected</code> 參數，測試會檢查 panic 訊息是否包含指定的子字串：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 11-9：should_panic 搭配 expected</span><button class="cb-copy" data-code="pub struct Guess {
+    value: i32,
+}
+
+impl Guess {
+    pub fn new(value: i32) -> Guess {
+        if value < 1 {
+            panic!(
+                &quot;Guess value must be greater than or equal to 1, got {value}.&quot;
+            );
+        } else if value > 100 {
+            panic!(
+                &quot;Guess value must be less than or equal to 100, got {value}.&quot;
+            );
+        }
+
+        Guess { value }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = &quot;less than or equal to 100&quot;)]
+    fn greater_than_100() {
+        Guess::new(200);
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> struct</span><span style="color:#E5C07B"> Guess</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    value</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#E5C07B"> Guess</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> new</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">value</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">Guess</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        if</span><span style="color:#E06C75"> value</span><span style="color:#56B6C2"> &#x3C;</span><span style="color:#D19A66"> 1</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">            panic!</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#98C379">                "Guess value must be greater than or equal to 1, got {value}."</span></span>
+<span class="line"><span style="color:#ABB2BF">            );</span></span>
+<span class="line"><span style="color:#ABB2BF">        } </span><span style="color:#C678DD">else</span><span style="color:#C678DD"> if</span><span style="color:#E06C75"> value</span><span style="color:#56B6C2"> ></span><span style="color:#D19A66"> 100</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">            panic!</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#98C379">                "Guess value must be less than or equal to 100, got {value}."</span></span>
+<span class="line"><span style="color:#ABB2BF">            );</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E5C07B">        Guess</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">value</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[cfg(test)]</span></span>
+<span class="line"><span style="color:#C678DD">mod</span><span style="color:#ABB2BF"> tests {</span></span>
+<span class="line"><span style="color:#C678DD">    use</span><span style="color:#E5C07B;font-style:italic"> super</span><span style="color:#ABB2BF">::*;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    #[test]</span></span>
+<span class="line"><span style="color:#ABB2BF">    #[should_panic(expected </span><span style="color:#56B6C2">=</span><span style="color:#98C379"> "less than or equal to 100"</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> greater_than_100</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#E5C07B">        Guess</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">200</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h3>測試也可以回傳 Result</h3><p>測試函式可以改成回傳 <code>Result&lt;T, E&gt;</code>，這樣就能在測試內使用 <code>?</code>，任何一步回傳 <code>Err</code> 都會讓測試失敗。限制是：這種測試不能搭配 <code>#[should_panic]</code>；要斷言某個操作回傳 <code>Err</code>，請用 <code>assert!(value.is_err())</code>，而不要對它使用 <code>?</code>。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：測試回傳 Result</span><button class="cb-copy" data-code="pub fn add(left: u64, right: u64) -> u64 {
+    left + right
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() -> Result<(), String> {
+        let result = add(2, 2);
+        if result == 4 {
+            Ok(())
+        } else {
+            Err(String::from(&quot;two plus two does not equal four&quot;))
+        }
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> add</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">left</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">right</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    left</span><span style="color:#ABB2BF"> + </span><span style="color:#E06C75">right</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[cfg(test)]</span></span>
+<span class="line"><span style="color:#C678DD">mod</span><span style="color:#ABB2BF"> tests {</span></span>
+<span class="line"><span style="color:#C678DD">    use</span><span style="color:#E5C07B;font-style:italic"> super</span><span style="color:#ABB2BF">::*;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    #[test]</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> it_works</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;(), </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> add</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">        if</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> ==</span><span style="color:#D19A66"> 4</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">            Ok</span><span style="color:#ABB2BF">(())</span></span>
+<span class="line"><span style="color:#ABB2BF">        } </span><span style="color:#C678DD">else</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">            Err</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"two plus two does not equal four"</span><span style="color:#ABB2BF">))</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="call tip"><span class="ci">💡</span><div><strong>本章沒有涵蓋的測試主題</strong><p>整合測試的目錄組織（<code>tests/</code> 目錄）、<code>cargo test</code> 的過濾與平行執行選項、文件測試，本章素材僅在輸出中帶到「Doc-tests」，未展開說明；需要時請查閱 Rust Book 第 11 章後續小節。</p></div></div><h2>小結</h2><ul><li><code>Result</code> 把失敗寫進型別，<code>?</code> 讓錯誤傳播只要一個字元，並透過 <code>From</code> 自動轉換錯誤型別。</li><li>預設回傳 <code>Result</code>；範例、原型、測試、以及你有編譯器看不到的保證時才用 <code>unwrap</code>／<code>expect</code>；違反契約時 panic。</li><li>用自訂型別把驗證集中在建構函式，函式簽名就成為文件。</li><li><code>#[test]</code>、<code>assert_eq!</code>、<code>should_panic</code> 是驗證錯誤路徑的基本工具。</li></ul><p>本章多次提到泛型 <code>Result&lt;T, E&gt;</code> 與閉包（<code>unwrap_or_else</code>）、<code>From</code> trait，下一章「Trait、泛型、閉包與迭代器」會逐一說明它們如何運作。</p></div><nav class="cnav" data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" class="prev" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>← 上一章</span><span class="nt" data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a><a href="/rust/ch10-traits-generics-closures" class="next" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>下一章 →</span><span class="nt" data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></nav></main></div><script>
+    // Theme
+    const html = document.documentElement;
+    const tt = document.getElementById('tt');
+    const isun = document.getElementById('isun');
+    const imoon = document.getElementById('imoon');
+    function syncIcons() {
+      const dk = html.classList.contains('dark');
+      isun.style.display = dk ? 'block' : 'none';
+      imoon.style.display = dk ? 'none' : 'block';
+    }
+    syncIcons();
+    tt?.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('cc-theme', html.classList.contains('dark') ? 'dark' : 'light');
+      syncIcons();
+    });
+
+    // Progress
+    const pb = document.getElementById('pb');
+    window.addEventListener('scroll', () => {
+      const t = document.documentElement.scrollHeight - window.innerHeight;
+      pb.style.width = t > 0 ? `${(window.scrollY / t) * 100}%` : '0%';
+    }, { passive: true });
+
+    // Sidebar part toggles
+    document.querySelectorAll('.pt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pid;
+        const list = document.querySelector(`[data-pl="${id}"]`);
+        btn.classList.toggle('open');
+        list?.classList.toggle('closed');
+      });
+    });
+
+    // Mobile menu
+    const sb = document.getElementById('sb');
+    const ov = document.getElementById('ov');
+    const mb = document.getElementById('mbtn');
+    const open = () => { sb.classList.add('open'); ov.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close = () => { sb.classList.remove('open'); ov.classList.remove('open'); document.body.style.overflow=''; };
+    mb?.addEventListener('click', open);
+    ov?.addEventListener('click', close);
+  </script></body></html>

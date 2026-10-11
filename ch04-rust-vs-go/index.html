@@ -1,0 +1,175 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-ccykbmgk><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Rust 與 Go：什麼時候選哪一個 | Rust 實戰指南</title><meta name="description" content="從設計哲學、記憶體管理、效能、並行、學習曲線到生態系，對照 Rust 與 Go 的取捨，並以 Discord 把 Read States 服務由 Go 改寫成 Rust 的案例，整理出什麼情境該選哪一個。"><link rel="icon" href="/rust/favicon.svg" type="image/svg+xml"><script>
+    (function () {
+      const s = localStorage.getItem('cc-theme');
+      const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark');
+    })();
+  </script><link rel="stylesheet" href="/rust/_astro/DocsLayout.9CQhNdRI.css"><style>.cb-wrap[data-astro-cid-c6nuo4je]{margin-bottom:1.25rem}.cb-bar[data-astro-cid-c6nuo4je]{background:#1a1a2e;border:1px solid #ffffff14;border-bottom-color:#ffffff0d;border-radius:6px 6px 0 0;justify-content:space-between;align-items:center;min-height:1.8rem;padding:.18rem .5rem .18rem .75rem;display:flex}.cb-label[data-astro-cid-c6nuo4je]{color:#a6adc8;letter-spacing:.04em;font-family:Fira Code,Cascadia Code,Consolas,monospace;font-size:.73rem}.cb-inner[data-astro-cid-c6nuo4je] pre{border-radius:0 0 8px 8px!important;margin-bottom:0!important}.cb-copy[data-astro-cid-c6nuo4je]{color:#888;cursor:pointer;background:#ffffff14;border:1px solid #ffffff1f;border-radius:4px;flex-shrink:0;padding:.15rem .55rem;font-size:.7rem;transition:all .15s}.cb-copy[data-astro-cid-c6nuo4je]:hover{color:#fff;background:#ffffff2e}.cb-copy[data-astro-cid-c6nuo4je].copied{color:#4ec9b0;border-color:#4ec9b0}
+</style></head><body data-astro-cid-ccykbmgk><div id="pb" data-astro-cid-ccykbmgk></div><header data-astro-cid-ccykbmgk><div class="hi" data-astro-cid-ccykbmgk><div class="hl" data-astro-cid-ccykbmgk><button id="mbtn" class="ibtn" aria-label="選單" data-astro-cid-ccykbmgk><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" data-astro-cid-ccykbmgk></path></svg></button><a href="/rust/" class="site-name" data-astro-cid-ccykbmgk><span class="logo" data-astro-cid-ccykbmgk>RS</span>&nbsp;&nbsp;Rust 實戰指南</a></div><div class="hr" data-astro-cid-ccykbmgk><button id="tt" class="ibtn" aria-label="切換主題" data-astro-cid-ccykbmgk><svg id="isun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" data-astro-cid-ccykbmgk></path></svg><svg id="imoon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" data-astro-cid-ccykbmgk></path></svg></button></div></div></header><div id="layout" data-astro-cid-ccykbmgk><nav id="sb" data-astro-cid-ccykbmgk><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="0" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 0：前言</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="0" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/preface" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>0.</span><span data-astro-cid-ccykbmgk>前言</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="1" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 1：認識 Rust</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="1" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>1.</span><span data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch02-setup-cargo" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>2.</span><span data-astro-cid-ccykbmgk>安裝與 Cargo：第一個專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>3.</span><span data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" class="active" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>4.</span><span data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="2" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 2：所有權：Rust 的核心</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="2" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>5.</span><span data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>6.</span><span data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch07-lifetimes" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>7.</span><span data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>8.</span><span data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="3" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 3：型別系統與錯誤處理</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="3" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>9.</span><span data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>10.</span><span data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>11.</span><span data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="4" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 4：並行與非同步</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="4" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch12-concurrency" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>12.</span><span data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>13.</span><span data-astro-cid-ccykbmgk>async/await 基礎</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>14.</span><span data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="5" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 5：工程實務與生態</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="5" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch15-idioms-and-project" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>15.</span><span data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch16-systems-linux-embedded" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>16.</span><span data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch17-reality-check" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>17.</span><span data-astro-cid-ccykbmgk>現實檢查：批評、代價與重寫案例</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="6" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 6：附錄</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="6" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/glossary" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>18.</span><span data-astro-cid-ccykbmgk>名詞解釋</span></a></li></ul></div></nav><div id="ov" data-astro-cid-ccykbmgk></div><main data-astro-cid-ccykbmgk><div class="cb" data-astro-cid-ccykbmgk><span class="clabel">第 4 章 · Part 1：認識 Rust</span><h1>Rust 與 Go：什麼時候選哪一個</h1><p class="cdesc">不是誰比較強，而是你的專案在乎速度、確定性，還是開發效率。</p><p>這一章的素材有三份：LogRocket 部落格的 Go vs. Rust 比較（頁面註明 2024 年 11 月 19 日更新）、Relia Software 的 2025 年 Rust vs Go 比較，以及 Discord 官方工程部落格的案例。前兩篇是第三方整理，第三篇是公司自述的單一案例，三者的證據強度不同，下文會標明出處。</p><h2>設計哲學：簡單 vs. 控制</h2><p>Go 由 Google 的工程師設計，2009 年公開，目標是提供比 C++ 更容易學、更容易寫、且針對多核心 CPU 最佳化的替代品（LogRocket）。Relia 的整理則是：Go 追求簡單與務實，重視生產力與可讀性，適合不同經驗的團隊協作；Rust 出身自 Mozilla Research，目標是在編譯期消除常見的程式錯誤，尤其是記憶體管理相關的，給開發者對系統資源的高度控制。</p><table><thead><tr><th>面向</th><th>Rust</th><th>Go</th></tr></thead><tbody><tr><td>設計哲學</td><td>安全、控制、零成本抽象</td><td>簡單、速度、易用</td></tr><tr><td>記憶體管理</td><td>所有權模型，沒有 GC</td><td>自動垃圾回收</td></tr><tr><td>效能</td><td>執行速度較快、可做底層最佳化</td><td>編譯與迭代速度較快</td></tr><tr><td>並行</td><td>安全的執行緒、async/await、編譯期檢查</td><td>goroutine 加 channel</td></tr><tr><td>學習曲線</td><td>陡（所有權、生命週期、trait）</td><td>平緩（語法精簡、概念少）</td></tr><tr><td>錯誤處理</td><td><code>Result</code> 型別明確表示可能失敗，未處理的結果通常會得到編譯器警告</td><td>回傳值加明確檢查</td></tr></tbody></table><p>上表整理自 Relia 的比較表。兩者都產生獨立執行檔，部署起來都單純；差別在於 Rust 把「誰釋放記憶體」交給編譯期規則，Go 交給執行期的垃圾回收器。</p><h2>記憶體管理：所有權 vs. GC</h2><p>Relia 用兩段小程式說明差異：Rust 的 <code>s</code> 被搬進函式後就不能再用，編譯器擋下；Go 的字串則可以隨意傳遞，因為執行期負責配置與清理。以下兩段程式都取自 Relia。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust 的所有權搬移（取自 Relia Software 比較文章）</span><button class="cb-copy" data-code="fn main() {
+    let s = String::from(&quot;hello&quot;);
+    takes_ownership(s); // s is moved here
+    // println!(&quot;{}&quot;, s); // Error: value borrowed here after move
+}
+
+fn takes_ownership(some_string: String) {
+    println!(&quot;{}&quot;, some_string);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">    takes_ownership</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">); </span><span style="color:#7F848E;font-style:italic">// s is moved here</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // println!("{}", s); // Error: value borrowed here after move</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> takes_ownership</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">some_string</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">some_string</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><script type="module">document.querySelectorAll(`.cb-copy`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.code;t&&navigator.clipboard.writeText(t).then(()=>{e.textContent=`已複製!`,e.classList.add(`copied`),setTimeout(()=>{e.textContent=`複製`,e.classList.remove(`copied`)},2e3)})})});</script><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Go 不需要想所有權（取自 Relia Software 比較文章）</span><button class="cb-copy" data-code="package main
+
+import &quot;fmt&quot;
+
+func main() {
+    s := &quot;hello&quot;
+    fmt.Println(s) // s can still be used freely
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="go"><code><span class="line"><span style="color:#C678DD">package</span><span style="color:#E5C07B"> main</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#98C379"> "fmt"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">func</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#E06C75">    s</span><span style="color:#E5C07B"> :=</span><span style="color:#98C379"> "hello"</span></span>
+<span class="line"><span style="color:#E06C75">    fmt</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">Println</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">) </span><span style="color:#7F848E;font-style:italic">// s can still be used freely</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>Relia 認為所有權消除了 use-after-free、double-free、並行資料競爭與空指標解參考等一整類錯誤，代價是前期更陡的學習曲線。有一點兩份素材說法不同：Relia 提到即使沒有任何 <code>unsafe</code> 程式碼，Rust 程式仍可能有記憶體安全漏洞，只是比沒有這套保證的語言少見；Discord 的文章腳註則寫「除非你使用 unsafe」，否則幾乎不可能有執行期記憶體 bug。兩者並陳，結論是：安全保證很強，但不是絕對。</p><figure class="svg-fig"><img src="/rust/img/ch04/01-comparison-memory-ownership-vs-gc.png" alt="Rust 所有權與 Go 垃圾回收的記憶體管理對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 4-1：Rust 所有權與 Go 垃圾回收在記憶體管理上的對照（依 Relia Software 比較文章）</figcaption></figure><h2>效能與基準測試</h2><p>LogRocket 與 Relia 都引用 Benchmarks Game：所有測試演算法中，最佳化後的 Rust 程式碼至少比最佳化後的 Go 快 30%，binary-trees 一項快了 12 倍。LogRocket 還說很多情況下連最沒最佳化的 Rust 都比最佳化的 Go 快。Relia 則補充 Go 的優勢在於編譯速度，常在幾秒內完成，Rust 編譯較慢。需要留意兩點：這兩份文章的基準數字有相同來源，不是兩次獨立量測；而 LogRocket 自己也提醒個別基準測試容易被操弄、不易解讀。實際專案請用自己的工作負載量測。</p><h2>並行：goroutine 的便利 vs. 編譯期安全</h2><p>Go 啟動 goroutine 只要在函式前加 <code>go</code>；LogRocket 也指出，就並行的開發體驗而言 Go 有優勢，而 Rust 的優勢是更能保證記憶體安全，且 Rust 原生 async/await 的出現相對較晚。Relia 稱 goroutine 只需數 KB 記憶體，可輕鬆啟動成千上萬個。Rust 這一側，則靠所有權與型別系統在編譯期排除資料競爭，並有系統執行緒、async/await、<code>rayon</code> 平行迭代與訊息傳遞等選項。下面是 Relia 的兩個並行範例。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Go 的 goroutine（取自 Relia Software）</span><button class="cb-copy" data-code="package main
+
+import (
+    &quot;fmt&quot;
+    &quot;time&quot;
+)
+
+func say(msg string) {
+    for i := 0; i < 3; i++ {
+        fmt.Println(msg)
+        time.Sleep(100 * time.Millisecond)
+    }
+}
+
+func main() {
+    go say(&quot;Goroutine&quot;)
+    say(&quot;Main&quot;)
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="go"><code><span class="line"><span style="color:#C678DD">package</span><span style="color:#E5C07B"> main</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> (</span></span>
+<span class="line"><span style="color:#98C379">    "fmt"</span></span>
+<span class="line"><span style="color:#98C379">    "time"</span></span>
+<span class="line"><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">func</span><span style="color:#61AFEF"> say</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75;font-style:italic">msg</span><span style="color:#C678DD"> string</span><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#C678DD">    for</span><span style="color:#E06C75"> i</span><span style="color:#E5C07B"> :=</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF">; </span><span style="color:#E06C75">i</span><span style="color:#56B6C2"> &#x3C;</span><span style="color:#D19A66"> 3</span><span style="color:#ABB2BF">; </span><span style="color:#E06C75">i</span><span style="color:#56B6C2">++</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">        fmt</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">Println</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">msg</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#E06C75">        time</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">Sleep</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">100</span><span style="color:#C678DD"> *</span><span style="color:#E06C75"> time</span><span style="color:#ABB2BF">.</span><span style="color:#E06C75">Millisecond</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">func</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    go</span><span style="color:#61AFEF"> say</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Goroutine"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#61AFEF">    say</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Main"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust 的執行緒（取自 Relia Software）</span><button class="cb-copy" data-code="use std::thread;
+
+fn main() {
+    let handle = thread::spawn(|| {
+        for _ in 0..3 {
+            println!(&quot;From spawned thread&quot;);
+        }
+    });
+
+    for _ in 0..3 {
+        println!(&quot;From main thread&quot;);
+    }
+
+    handle.join().unwrap();
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::thread;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> handle</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">||</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        for</span><span style="color:#E06C75"> _</span><span style="color:#C678DD"> in</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF">..</span><span style="color:#D19A66">3</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">            println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"From spawned thread"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#ABB2BF">    });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    for</span><span style="color:#E06C75"> _</span><span style="color:#C678DD"> in</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF">..</span><span style="color:#D19A66">3</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"From main thread"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">    handle</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">join</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>Go 另有內建的 race detector，用 <code>-race</code> 旗標在建置或測試時啟用，於執行期偵測競爭條件並回報位置（LogRocket）；Rust 則是在編譯期就拒絕有資料競爭風險的程式。兩者防護的時間點不同。Rust 的並行與 async 會在第 12、13 章完整介紹。</p><figure class="svg-fig"><img src="/rust/img/ch04/02-comparison-concurrency.png" alt="Go goroutine 與 Rust 執行緒在並行開發體驗與防護時間點的對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 4-2：Go 與 Rust 在並行上的開發體驗與防護時間點對照（依 Relia Software 比較文章）</figcaption></figure><h2>學習曲線與開發速度</h2><p>Relia 指出，Rust 往往需要數週到數個月才能熟悉，Go 多半幾天到幾週就能上手；它引用 Stack Overflow 開發者調查，說 84% 的 Rust 開發者想繼續使用，Go 則為 60%。這是 Relia 轉述的調查結果，素材沒有附原始問卷，請視為參考。LogRocket 補充了開發循環的差異：Go 容易寫、容易協作，但 <code>nil</code> 與錯誤檢查靠開發者自己小心，編譯器幫不上忙；Rust 寫起來和編譯起來較棘手，但編譯器會抓出這些問題並給出清楚訊息，所以「編譯通過就大致正確」雖然兩者都不成立，卻更接近 Rust，改既有程式碼時更有信心。</p><h2>案例：Discord 把 Read States 從 Go 改寫成 Rust</h2><p>Discord 的 Read States 服務負責記錄你在每個頻道讀到哪則訊息，每次連線、發訊息與讀訊息都會存取，位於熱路徑上。據文章自述：Discord 有數十億筆 Read State，每個使用者每個頻道一筆；每台伺服器有一個 LRU 快取，內含數千萬筆、每秒數十萬次更新，並以 Cassandra 持久化。Go 版本大多時候很快，但大約每兩分鐘就出現延遲與 CPU 尖峰。</p><p>團隊查到原因：Go 會在至少每兩分鐘強制執行一次垃圾回收，而回收器需要掃描整個 LRU 快取，才能確認哪些記憶體真的沒有被引用。調整 GC 百分比沒有效果；縮小快取能降低尖峰，卻拉高第 99 百分位延遲，因為快取命中率下降。改寫為 Rust 之後，快取項目被逐出時記憶體會立刻釋放，不需要等回收器。作者說，只做了基本最佳化的 Rust 版本，延遲與 Go 一樣好且沒有尖峰，再經過少量最佳化後，延遲、CPU 與記憶體每個指標都勝過 Go；之後把快取容量提高到 800 萬筆，平均時間改以微秒計。</p><table><thead><tr><th>事實</th><th>來源說法</th><th>注意事項</th></tr></thead><tbody><tr><td>Go 版本</td><td>文章腳註：圖表來自 Go 1.9.2，也試過 1.8、1.9、1.10，沒有改善</td><td>版本很舊，現代 Go 的 GC 是否已改善，素材未提供</td></tr><tr><td>初次移植完成</td><td>腳註：2019 年 5 月</td><td>文章發表日期素材未提供</td></tr><tr><td>非同步支援</td><td>當時 Rust stable 沒有好用的 async，團隊選擇用 nightly，直到 stable 支援</td><td>現在 stable 已支援 async</td></tr><tr><td>公司規模</td><td>自述 2.5 億以上使用者（250+ million users）、少於 50 位工程師</td><td>原文如此，為公司自述</td></tr></tbody></table><div class="call warn"><span class="ci">⚠️</span><div><strong>這是單一案例，不是通則</strong><p>Discord 自己在腳註說：不認為你該為了改寫而改寫，只會在適合的地方使用 Rust。這個服務小而獨立、處於熱路徑、延遲尖峰直接影響使用者體驗，才是它適合重寫的原因。圖表中的具體數字，素材只有圖片，本章未引用。</p></div></div><figure class="svg-fig"><img src="/rust/img/ch04/03-flowchart-discord-case.png" alt="Discord Read States 在 Go 版與 Rust 版的延遲尖峰成因與差異流程" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 4-3：Discord Read States 從 Go 改寫為 Rust 前後的延遲成因對照（Discord 自述的單一案例，不代表一般結論）</figcaption></figure><h2>怎麼選：依素材歸納的決策表</h2><p>下面的選型是依三份素材整理出來的判斷，不是任何一方的官方建議。</p><table><thead><tr><th>你的情境</th><th>傾向</th><th>理由（出處）</th></tr></thead><tbody><tr><td>Web API、微服務、雲端基礎建設、DevOps 工具</td><td>Go</td><td>內建 HTTP 支援、goroutine、部署簡單（LogRocket、Relia）</td></tr><tr><td>重視開發速度、團隊成員經驗不一</td><td>Go</td><td>語法精簡、學習曲線平緩（Relia）</td></tr><tr><td>CPU 密集、處理大量資料、演算法</td><td>Rust</td><td>無 GC、基準測試較快（LogRocket、Relia）</td></tr><tr><td>系統程式、嵌入式、遊戲引擎、WebAssembly</td><td>Rust</td><td>底層控制、資源效率（Relia、LogRocket）</td></tr><tr><td>延遲尖峰不可接受、受 GC 影響</td><td>Rust（需自行量測）</td><td>Discord 案例（單一案例）</td></tr><tr><td>安全關鍵、記憶體安全漏洞代價高</td><td>Rust</td><td>編譯期保證（Relia）</td></tr></tbody></table><figure class="svg-fig"><svg width="100%" height="auto" viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg">
+  <g font-family="system-ui, sans-serif">
+    <rect x="20" y="15" width="370" height="38" rx="8" fill="var(--bg2)" stroke="var(--accent2)" stroke-width="2"/>
+    <text x="205" y="40" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--accent2)">傾向 Go</text>
+    <rect x="410" y="15" width="370" height="38" rx="8" fill="var(--bg2)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="595" y="40" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--accent)">傾向 Rust</text>
+
+    <rect x="20" y="75" width="370" height="58" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="205" y="100" text-anchor="middle" font-size="16px" fill="var(--text)">Web API、微服務</text>
+    <text x="205" y="121" text-anchor="middle" font-size="14px" fill="var(--muted)">內建 HTTP 支援、goroutine</text>
+    <rect x="20" y="149" width="370" height="58" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="205" y="174" text-anchor="middle" font-size="16px" fill="var(--text)">雲端基礎建設、DevOps 工具</text>
+    <text x="205" y="195" text-anchor="middle" font-size="14px" fill="var(--muted)">部署簡單</text>
+    <rect x="20" y="223" width="370" height="58" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="205" y="248" text-anchor="middle" font-size="16px" fill="var(--text)">重視開發速度、團隊經驗不一</text>
+    <text x="205" y="269" text-anchor="middle" font-size="14px" fill="var(--muted)">語法精簡、學習曲線平緩</text>
+
+    <rect x="410" y="75" width="370" height="58" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="595" y="100" text-anchor="middle" font-size="16px" fill="var(--text)">CPU 密集、大量資料</text>
+    <text x="595" y="121" text-anchor="middle" font-size="14px" fill="var(--muted)">無 GC</text>
+    <rect x="410" y="149" width="370" height="58" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="595" y="174" text-anchor="middle" font-size="16px" fill="var(--text)">系統程式、嵌入式、WebAssembly</text>
+    <text x="595" y="195" text-anchor="middle" font-size="14px" fill="var(--muted)">底層控制、資源效率</text>
+    <rect x="410" y="223" width="370" height="58" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="595" y="248" text-anchor="middle" font-size="16px" fill="var(--text)">延遲尖峰不可接受</text>
+    <text x="595" y="269" text-anchor="middle" font-size="14px" fill="var(--muted)">Discord 案例（單一案例，需自行量測）</text>
+    <rect x="410" y="297" width="370" height="58" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="595" y="322" text-anchor="middle" font-size="16px" fill="var(--text)">安全關鍵、記憶體漏洞代價高</text>
+    <text x="595" y="343" text-anchor="middle" font-size="14px" fill="var(--muted)">編譯期保證</text>
+
+    <text x="205" y="330" text-anchor="middle" font-size="14px" fill="var(--muted)">依三份素材歸納，非官方建議</text>
+  </g>
+</svg><figcaption>圖 4-4：依情境選 Go 或 Rust 的歸納</figcaption></figure><p>兩份比較文章的共同結論是：沒有放諸四海皆準的答案，取決於專案需求、團隊能力與優先順序。如果你被 Rust 的安全保證吸引，接下來三章將是整本書的核心：先從所有權開始，看看編譯器到底在檢查什麼。</p></div><nav class="cnav" data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" class="prev" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>← 上一章</span><span class="nt" data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a><a href="/rust/ch05-ownership" class="next" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>下一章 →</span><span class="nt" data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></nav></main></div><script>
+    // Theme
+    const html = document.documentElement;
+    const tt = document.getElementById('tt');
+    const isun = document.getElementById('isun');
+    const imoon = document.getElementById('imoon');
+    function syncIcons() {
+      const dk = html.classList.contains('dark');
+      isun.style.display = dk ? 'block' : 'none';
+      imoon.style.display = dk ? 'none' : 'block';
+    }
+    syncIcons();
+    tt?.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('cc-theme', html.classList.contains('dark') ? 'dark' : 'light');
+      syncIcons();
+    });
+
+    // Progress
+    const pb = document.getElementById('pb');
+    window.addEventListener('scroll', () => {
+      const t = document.documentElement.scrollHeight - window.innerHeight;
+      pb.style.width = t > 0 ? `${(window.scrollY / t) * 100}%` : '0%';
+    }, { passive: true });
+
+    // Sidebar part toggles
+    document.querySelectorAll('.pt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pid;
+        const list = document.querySelector(`[data-pl="${id}"]`);
+        btn.classList.toggle('open');
+        list?.classList.toggle('closed');
+      });
+    });
+
+    // Mobile menu
+    const sb = document.getElementById('sb');
+    const ov = document.getElementById('ov');
+    const mb = document.getElementById('mbtn');
+    const open = () => { sb.classList.add('open'); ov.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close = () => { sb.classList.remove('open'); ov.classList.remove('open'); document.body.style.overflow=''; };
+    mb?.addEventListener('click', open);
+    ov?.addEventListener('click', close);
+  </script></body></html>

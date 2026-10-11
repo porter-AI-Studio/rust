@@ -1,0 +1,401 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-ccykbmgk><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>用 Tokio 與 axum 寫非同步程式 | Rust 實戰指南</title><meta name="description" content="以 Tokio 建立 runtime、task 與計時器，並使用 axum 的路由、extractor、回應與 State 管理，搭配 Serde 處理 JSON。"><link rel="icon" href="/rust/favicon.svg" type="image/svg+xml"><script>
+    (function () {
+      const s = localStorage.getItem('cc-theme');
+      const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark');
+    })();
+  </script><link rel="stylesheet" href="/rust/_astro/DocsLayout.9CQhNdRI.css"><style>.cb-wrap[data-astro-cid-c6nuo4je]{margin-bottom:1.25rem}.cb-bar[data-astro-cid-c6nuo4je]{background:#1a1a2e;border:1px solid #ffffff14;border-bottom-color:#ffffff0d;border-radius:6px 6px 0 0;justify-content:space-between;align-items:center;min-height:1.8rem;padding:.18rem .5rem .18rem .75rem;display:flex}.cb-label[data-astro-cid-c6nuo4je]{color:#a6adc8;letter-spacing:.04em;font-family:Fira Code,Cascadia Code,Consolas,monospace;font-size:.73rem}.cb-inner[data-astro-cid-c6nuo4je] pre{border-radius:0 0 8px 8px!important;margin-bottom:0!important}.cb-copy[data-astro-cid-c6nuo4je]{color:#888;cursor:pointer;background:#ffffff14;border:1px solid #ffffff1f;border-radius:4px;flex-shrink:0;padding:.15rem .55rem;font-size:.7rem;transition:all .15s}.cb-copy[data-astro-cid-c6nuo4je]:hover{color:#fff;background:#ffffff2e}.cb-copy[data-astro-cid-c6nuo4je].copied{color:#4ec9b0;border-color:#4ec9b0}
+</style></head><body data-astro-cid-ccykbmgk><div id="pb" data-astro-cid-ccykbmgk></div><header data-astro-cid-ccykbmgk><div class="hi" data-astro-cid-ccykbmgk><div class="hl" data-astro-cid-ccykbmgk><button id="mbtn" class="ibtn" aria-label="選單" data-astro-cid-ccykbmgk><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" data-astro-cid-ccykbmgk></path></svg></button><a href="/rust/" class="site-name" data-astro-cid-ccykbmgk><span class="logo" data-astro-cid-ccykbmgk>RS</span>&nbsp;&nbsp;Rust 實戰指南</a></div><div class="hr" data-astro-cid-ccykbmgk><button id="tt" class="ibtn" aria-label="切換主題" data-astro-cid-ccykbmgk><svg id="isun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" data-astro-cid-ccykbmgk></path></svg><svg id="imoon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" data-astro-cid-ccykbmgk></path></svg></button></div></div></header><div id="layout" data-astro-cid-ccykbmgk><nav id="sb" data-astro-cid-ccykbmgk><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="0" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 0：前言</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="0" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/preface" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>0.</span><span data-astro-cid-ccykbmgk>前言</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="1" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 1：認識 Rust</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="1" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>1.</span><span data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch02-setup-cargo" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>2.</span><span data-astro-cid-ccykbmgk>安裝與 Cargo：第一個專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>3.</span><span data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>4.</span><span data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="2" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 2：所有權：Rust 的核心</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="2" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>5.</span><span data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>6.</span><span data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch07-lifetimes" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>7.</span><span data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>8.</span><span data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="3" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 3：型別系統與錯誤處理</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="3" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>9.</span><span data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>10.</span><span data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>11.</span><span data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="4" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 4：並行與非同步</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="4" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch12-concurrency" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>12.</span><span data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>13.</span><span data-astro-cid-ccykbmgk>async/await 基礎</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" class="active" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>14.</span><span data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="5" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 5：工程實務與生態</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="5" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch15-idioms-and-project" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>15.</span><span data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch16-systems-linux-embedded" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>16.</span><span data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch17-reality-check" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>17.</span><span data-astro-cid-ccykbmgk>現實檢查：批評、代價與重寫案例</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="6" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 6：附錄</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="6" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/glossary" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>18.</span><span data-astro-cid-ccykbmgk>名詞解釋</span></a></li></ul></div></nav><div id="ov" data-astro-cid-ccykbmgk></div><main data-astro-cid-ccykbmgk><div class="cb" data-astro-cid-ccykbmgk><span class="clabel">第 14 章 · Part 4：並行與非同步</span><h1>用 Tokio 與 axum 寫非同步程式</h1><p class="cdesc">以 Tokio 驅動非同步工作，搭配 axum 處理 HTTP 請求，並用 Serde 在 Rust 型別與 JSON 間轉換。</p><p>上一章說過，Rust 不內建 runtime，必須由 crate 提供。本章用最常見的組合：<strong>Tokio</strong>（runtime）加 <strong>axum</strong>（HTTP 路由與請求處理），再搭配 <strong>Serde</strong> 做資料序列化。</p><h2>Tokio：從 Hello Tokio 開始</h2><p>依 Tokio 官方教學（tokio.rs/tokio/tutorial/hello-tokio），Tokio 是用來寫可靠非同步應用的 runtime，提供非同步 I/O、網路、排程、計時器等。教學的第一個程式會連上 Mini-Redis 伺服器，把鍵 <code>hello</code> 設成 <code>world</code>，再讀回來。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>建立專案（官方教學）</span><button class="cb-copy" data-code="$ cargo new my-redis
+$ cd my-redis" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> new</span><span style="color:#98C379"> my-redis</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cd</span><span style="color:#98C379"> my-redis</span></span></code></pre></div></div><script type="module">document.querySelectorAll(`.cb-copy`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.code;t&&navigator.clipboard.writeText(t).then(()=>{e.textContent=`已複製!`,e.classList.add(`copied`),setTimeout(()=>{e.textContent=`複製`,e.classList.remove(`copied`)},2e3)})})});</script><p>在 <code>Cargo.toml</code> 的 <code>[dependencies]</code> 下加入：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Cargo.toml（官方教學）</span><button class="cb-copy" data-code="tokio = { version = &quot;1&quot;, features = [&quot;full&quot;] }
+mini-redis = &quot;0.4&quot;" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="toml"><code><span class="line"><span style="color:#E06C75">tokio</span><span style="color:#ABB2BF"> = { </span><span style="color:#E06C75">version</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"1"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">features</span><span style="color:#ABB2BF"> = [</span><span style="color:#98C379">"full"</span><span style="color:#ABB2BF">] }</span></span>
+<span class="line"><span style="color:#E06C75">mini-redis</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"0.4"</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>src/main.rs（官方教學）</span><button class="cb-copy" data-code="use mini_redis::{client, Result};
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Open a connection to the mini-redis address.
+    let mut client = client::connect(&quot;127.0.0.1:6379&quot;).await?;
+
+    // Set the key &quot;hello&quot; with value &quot;world&quot;
+    client.set(&quot;hello&quot;, &quot;world&quot;.into()).await?;
+
+    // Get key &quot;hello&quot;
+    let result = client.get(&quot;hello&quot;).await?;
+
+    println!(&quot;got value from the server; result={:?}&quot;, result);
+
+    Ok(())
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> mini_redis</span><span style="color:#ABB2BF">::{client, </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[tokio::main]</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;()> {</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Open a connection to the mini-redis address.</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> client</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> client</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">connect</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"127.0.0.1:6379"</span><span style="color:#ABB2BF">).</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">?;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Set the key "hello" with value "world"</span></span>
+<span class="line"><span style="color:#E06C75">    client</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">set</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">, </span><span style="color:#98C379">"world"</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">into</span><span style="color:#ABB2BF">()).</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">?;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Get key "hello"</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> client</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">get</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">).</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">?;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"got value from the server; result={:?}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">result</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E5C07B">    Ok</span><span style="color:#ABB2BF">(())</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>先在另一個終端機執行 <code>mini-redis-server</code>（未安裝時可用 <code>cargo install mini-redis</code>），再執行 <code>cargo run</code>，官方給出的輸出為：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>執行結果（官方教學）</span><button class="cb-copy" data-code="$ cargo run
+got value from the server; result=Some(b&quot;world&quot;)" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>$ cargo run</span></span>
+<span class="line"><span>got value from the server; result=Some(b"world")</span></span></code></pre></div></div><p>官方特別指出：雖然操作是非同步的，程式碼<strong>看起來</strong>像同步，唯一的線索是 <code>.await</code>。</p><h3>Rust 的 async 是惰性的</h3><p>Tokio 教學強調，呼叫 <code>async fn</code> 不會執行函式本體，而是回傳一個代表該操作的值，概念上類似零參數閉包；要真正執行必須對回傳值 <code>.await</code>。下例會先印出 <code>hello</code>，再印出 <code>world</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Tokio 教學：惰性執行</span><button class="cb-copy" data-code="async fn say_world() {
+    println!(&quot;world&quot;);
+}
+
+#[tokio::main]
+async fn main() {
+    // Calling `say_world()` does not execute the body of `say_world()`.
+    let op = say_world();
+
+    // This println! comes first
+    println!(&quot;hello&quot;);
+
+    // Calling `.await` on `op` starts executing `say_world`.
+    op.await;
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> say_world</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"world"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[tokio::main]</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Calling `say_world()` does not execute the body of `say_world()`.</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> op</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> say_world</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // This println! comes first</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Calling `.await` on `op` starts executing `say_world`.</span></span>
+<span class="line"><span style="color:#E06C75">    op</span><span style="color:#ABB2BF">.</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h3>#[tokio::main] 做了什麼</h3><p>async 函式必須由 runtime 執行。runtime 包含非同步 task 排程器、事件驅動 I/O 與計時器等，而且不會自動啟動，所以 main 要負責啟動。<code>#[tokio::main]</code> 是個巨集，把 <code>async fn main()</code> 轉成同步的 <code>fn main()</code>，內部初始化 runtime 並執行原本的 async main。官方給的轉換前後如下：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>轉換前（官方教學）</span><button class="cb-copy" data-code="#[tokio::main]
+async fn main() {
+    println!(&quot;hello&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#ABB2BF">#[tokio::main]</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>轉換後（官方教學）</span><button class="cb-copy" data-code="fn main() {
+    let mut rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(async {
+        println!(&quot;hello&quot;);
+    })
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> rt</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> tokio</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">runtime</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Runtime</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#E06C75">    rt</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">block_on</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">async</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    })</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="call info"><span class="ci">ℹ️</span><div><strong>Cargo features</strong><p>教學使用 <code>features = ["full"]</code>。Tokio 功能很多（TCP、UDP、Unix socket、計時器、同步工具、多種排程器等），要壓低編譯時間或最終體積時，可只啟用用到的 feature。axum 文件也提醒：使用 <code>#[tokio::main]</code> 需要啟用 tokio 的 <code>macros</code> 與 <code>rt-multi-thread</code> feature，或直接用 <code>full</code>。</p></div></div><figure class="svg-fig"><img src="/rust/img/ch14/01-framework-tokio-axum-serde-roles.png" alt="Tokio、axum 與 Serde 三個 crate 的分工" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 14-1：Tokio、axum、Serde 三個 crate 各自的角色</figcaption></figure><h2>Task、計時器與逾時</h2><p>以下範例取自 Medium 作者 Aarambh Dev Hub 的教學（2024-09，個人部落格，非官方）。<code>tokio::spawn</code> 建立在背景獨立執行的 task；用 <code>.await</code> 等待它們結束。文章給出的輸出顯示 task two（睡 1 秒）比 task one（睡 2 秒）先完成。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>spawn 兩個 task（依該文章）</span><button class="cb-copy" data-code="use tokio::time::{sleep, Duration};
+
+#[tokio::main]
+async fn main() {
+    println!(&quot;Hello, Tokio!&quot;);
+
+    let task_one = tokio::spawn(async {
+        println!(&quot;Task one is started&quot;);
+        sleep(Duration::from_secs(2)).await;
+        println!(&quot;Task one is done&quot;);
+    });
+
+    let task_two = tokio::spawn(async {
+        println!(&quot;Task two is started&quot;);
+        sleep(Duration::from_secs(1)).await;
+        println!(&quot;Task two is done&quot;);
+    });
+
+    // Await the tasks to complete
+    task_one.await.unwrap();
+    task_two.await.unwrap();
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> tokio</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">time</span><span style="color:#ABB2BF">::{sleep, </span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[tokio::main]</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Hello, Tokio!"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> task_one</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> tokio</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">async</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Task one is started"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">        sleep</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_secs</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">)).</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Task one is done"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> task_two</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> tokio</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">async</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Task two is started"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">        sleep</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_secs</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">)).</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Task two is done"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Await the tasks to complete</span></span>
+<span class="line"><span style="color:#E06C75">    task_one</span><span style="color:#ABB2BF">.</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#E06C75">    task_two</span><span style="color:#ABB2BF">.</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p><code>tokio::time::timeout</code> 可為操作設時限；下例中的任務需 2 秒、時限 1 秒，所以會得到逾時結果。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>逾時（依該文章，補上原文片段省略的 sleep 匯入）</span><button class="cb-copy" data-code="use tokio::time::{sleep, timeout, Duration};
+
+#[tokio::main]
+async fn main() {
+    let result = timeout(Duration::from_secs(1), async {
+        sleep(Duration::from_secs(2)).await;
+    }).await;
+
+    match result {
+        Ok(_) => println!(&quot;Task completed successfully&quot;),
+        Err(_) => println!(&quot;Task timed out&quot;),
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> tokio</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">time</span><span style="color:#ABB2BF">::{sleep, timeout, </span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[tokio::main]</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> timeout</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_secs</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">), </span><span style="color:#C678DD">async</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        sleep</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_secs</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">)).</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">    }).</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    match</span><span style="color:#E06C75"> result</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">        Ok</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">_</span><span style="color:#ABB2BF">) => </span><span style="color:#61AFEF">println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Task completed successfully"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">        Err</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">_</span><span style="color:#ABB2BF">) => </span><span style="color:#61AFEF">println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Task timed out"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>上一章已提過的陷阱在此同樣適用：不要在 async 中呼叫阻塞操作，需要時改用 <code>spawn_blocking</code>。</p><h2>axum：路由、handler、extractor</h2><p>axum 的定位（docs.rs/axum）是專注於易用與模組化的 HTTP 路由與請求處理函式庫，特色包括：不靠巨集的路由 API、以 extractor 宣告式解析請求、簡單可預期的錯誤處理模型、極少樣板的回應產生，以及完整利用 <code>tower</code> 與 <code>tower-http</code> 的中介軟體生態。官方說這最後一點是 axum 與其他框架最大的差別：axum 沒有自己的中介軟體系統，而是用 <code>tower::Service</code>，因此免費取得逾時、追蹤、壓縮、授權等功能，也能與 <code>hyper</code>、<code>tonic</code> 寫的應用共用中介軟體。相容性方面，axum 是為 tokio 與 hyper 設計的，官方明說目前不以 runtime 與傳輸層獨立為目標。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>axum 的 Hello, World（官方文件）</span><button class="cb-copy" data-code="use axum::{
+    routing::get,
+    Router,
+};
+
+#[tokio::main]
+async fn main() {
+    // build our application with a single route
+    let app = Router::new().route(&quot;/&quot;, get(|| async { &quot;Hello, World!&quot; }));
+
+    // run our app with hyper, listening globally on port 3000
+    let listener = tokio::net::TcpListener::bind(&quot;0.0.0.0:3000&quot;).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> axum</span><span style="color:#ABB2BF">::{</span></span>
+<span class="line"><span style="color:#E5C07B">    routing</span><span style="color:#ABB2BF">::get,</span></span>
+<span class="line"><span style="color:#E5C07B">    Router</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[tokio::main]</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // build our application with a single route</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> app</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Router</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">route</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"/"</span><span style="color:#ABB2BF">, </span><span style="color:#61AFEF">get</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">||</span><span style="color:#C678DD"> async</span><span style="color:#ABB2BF"> { </span><span style="color:#98C379">"Hello, World!"</span><span style="color:#ABB2BF"> }));</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // run our app with hyper, listening globally on port 3000</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> listener</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> tokio</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">net</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">TcpListener</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">bind</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"0.0.0.0:3000"</span><span style="color:#ABB2BF">).</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#E5C07B">    axum</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">serve</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">listener</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">app</span><span style="color:#ABB2BF">).</span><span style="color:#C678DD">await</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p><code>Router</code> 設定路徑對應到哪個服務：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>路由（官方文件）</span><button class="cb-copy" data-code="use axum::{Router, routing::get};
+
+// our router
+let app = Router::new()
+    .route(&quot;/&quot;, get(root))
+    .route(&quot;/foo&quot;, get(get_foo).post(post_foo))
+    .route(&quot;/foo/bar&quot;, get(foo_bar));
+
+// which calls one of these handlers
+async fn root() {}
+async fn get_foo() {}
+async fn post_foo() {}
+async fn foo_bar() {}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> axum</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">Router</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">routing</span><span style="color:#ABB2BF">::get};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// our router</span></span>
+<span class="line"><span style="color:#C678DD">let</span><span style="color:#E06C75"> app</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Router</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">    .</span><span style="color:#61AFEF">route</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"/"</span><span style="color:#ABB2BF">, </span><span style="color:#61AFEF">get</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">root</span><span style="color:#ABB2BF">))</span></span>
+<span class="line"><span style="color:#ABB2BF">    .</span><span style="color:#61AFEF">route</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"/foo"</span><span style="color:#ABB2BF">, </span><span style="color:#61AFEF">get</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">get_foo</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">post</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">post_foo</span><span style="color:#ABB2BF">))</span></span>
+<span class="line"><span style="color:#ABB2BF">    .</span><span style="color:#61AFEF">route</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"/foo/bar"</span><span style="color:#ABB2BF">, </span><span style="color:#61AFEF">get</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">foo_bar</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// which calls one of these handlers</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> root</span><span style="color:#ABB2BF">() {}</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> get_foo</span><span style="color:#ABB2BF">() {}</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> post_foo</span><span style="color:#ABB2BF">() {}</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> foo_bar</span><span style="color:#ABB2BF">() {}</span></span></code></pre></div></div><p>在 axum 中，handler 是接收零個或多個 extractor、並回傳可轉成回應之物的 async 函式；應用邏輯就寫在 handler 裡。extractor 是實作 <code>FromRequest</code> 或 <code>FromRequestParts</code> 的型別，用來拆解請求：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Extractor（官方文件）</span><button class="cb-copy" data-code="use axum::extract::{Path, Query, Json};
+use std::collections::HashMap;
+
+// `Path` gives you the path parameters and deserializes them.
+async fn path(Path(user_id): Path<u32>) {}
+
+// `Query` gives you the query parameters and deserializes them.
+async fn query(Query(params): Query<HashMap<String, String>>) {}
+
+// Buffer the request body and deserialize it as JSON into a
+// `serde_json::Value`. `Json` supports any type that implements
+// `serde::Deserialize`.
+async fn json(Json(payload): Json<serde_json::Value>) {}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> axum</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">extract</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">Path</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Query</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Json</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">collections</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">HashMap</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// `Path` gives you the path parameters and deserializes them.</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> path</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">Path</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">user_id</span><span style="color:#ABB2BF">): </span><span style="color:#E5C07B">Path</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">u32</span><span style="color:#ABB2BF">>) {}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// `Query` gives you the query parameters and deserializes them.</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> query</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">Query</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">params</span><span style="color:#ABB2BF">): </span><span style="color:#E5C07B">Query</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">HashMap</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">>>) {}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// Buffer the request body and deserialize it as JSON into a</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// `serde_json::Value`. `Json` supports any type that implements</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// `serde::Deserialize`.</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> json</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">Json</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">payload</span><span style="color:#ABB2BF">): </span><span style="color:#E5C07B">Json</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E06C75">serde_json</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Value</span><span style="color:#ABB2BF">>) {}</span></span></code></pre></div></div><p>任何實作 <code>IntoResponse</code> 的型別都能從 handler 回傳：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>回應（官方文件）</span><button class="cb-copy" data-code="use axum::{
+    body::Body,
+    routing::get,
+    response::Json,
+    Router,
+};
+use serde_json::{Value, json};
+
+// `&amp;'static str` becomes a `200 OK` with `content-type: text/plain; charset=utf-8`
+async fn plain_text() -> &amp;'static str {
+    &quot;foo&quot;
+}
+
+// `Json` gives a content-type of `application/json` and works with any type
+// that implements `serde::Serialize`
+async fn json() -> Json<Value> {
+    Json(json!({ &quot;data&quot;: 42 }))
+}
+
+let app = Router::new()
+    .route(&quot;/plain_text&quot;, get(plain_text))
+    .route(&quot;/json&quot;, get(json));" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> axum</span><span style="color:#ABB2BF">::{</span></span>
+<span class="line"><span style="color:#E5C07B">    body</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Body</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E5C07B">    routing</span><span style="color:#ABB2BF">::get,</span></span>
+<span class="line"><span style="color:#E5C07B">    response</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Json</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E5C07B">    Router</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">};</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> serde_json</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">Value</span><span style="color:#ABB2BF">, json};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// `&#x26;'static str` becomes a `200 OK` with `content-type: text/plain; charset=utf-8`</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> plain_text</span><span style="color:#ABB2BF">() -> &#x26;'</span><span style="color:#E5C07B">static</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#98C379">    "foo"</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// `Json` gives a content-type of `application/json` and works with any type</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// that implements `serde::Serialize`</span></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> json</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">Json</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">Value</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#61AFEF">    Json</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">json!</span><span style="color:#ABB2BF">({ </span><span style="color:#98C379">"data"</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">42</span><span style="color:#ABB2BF"> }))</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">let</span><span style="color:#E06C75"> app</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Router</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">    .</span><span style="color:#61AFEF">route</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"/plain_text"</span><span style="color:#ABB2BF">, </span><span style="color:#61AFEF">get</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">plain_text</span><span style="color:#ABB2BF">))</span></span>
+<span class="line"><span style="color:#ABB2BF">    .</span><span style="color:#61AFEF">route</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"/json"</span><span style="color:#ABB2BF">, </span><span style="color:#61AFEF">get</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">json</span><span style="color:#ABB2BF">));</span></span></code></pre></div></div><h3>Serde：JSON 的基礎</h3><p><code>Json</code> extractor 與回應之所以能用，是因為資料型別實作了 Serde 的 <code>Serialize</code>／<code>Deserialize</code>。Serde 官方網站說明：許多語言靠執行期反射做序列化，Serde 則建立在 Rust 的 trait 系統上，可用 derive 屬性在編譯期自動產生實作，沒有反射或執行期型別資訊的負擔，在許多情況下能與手寫序列化器一樣快。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Serde 官方首頁範例</span><button class="cb-copy" data-code="use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn main() {
+    let point = Point { x: 1, y: 2 };
+
+    // Convert the Point to a JSON string.
+    let serialized = serde_json::to_string(&amp;point).unwrap();
+
+    // Prints serialized = {&quot;x&quot;:1,&quot;y&quot;:2}
+    println!(&quot;serialized = {}&quot;, serialized);
+
+    // Convert the JSON string back to a Point.
+    let deserialized: Point = serde_json::from_str(&amp;serialized).unwrap();
+
+    // Prints deserialized = Point { x: 1, y: 2 }
+    println!(&quot;deserialized = {:?}&quot;, deserialized);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> serde</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">Serialize</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Deserialize</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[derive(</span><span style="color:#E5C07B">Serialize</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Deserialize</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Debug</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> Point</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    x</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75">    y</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> point</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Point</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF"> };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Convert the Point to a JSON string.</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> serialized</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> serde_json</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">to_string</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">point</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Prints serialized = {"x":1,"y":2}</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"serialized = {}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">serialized</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Convert the JSON string back to a Point.</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> deserialized</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Point</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> serde_json</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_str</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">serialized</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Prints deserialized = Point { x: 1, y: 2 }</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"deserialized = {:?}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">deserialized</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><figure class="svg-fig"><svg width="100%" height="auto" viewBox="0 0 800 360" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arr-c14" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--accent)" /></marker></defs><g font-family="system-ui, sans-serif"><rect x="25" y="25" width="130" height="64" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="90.0" y="63.0" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">HTTP 請求</text><rect x="180" y="25" width="130" height="64" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="245.0" y="51" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">Router</text><text x="245.0" y="73" text-anchor="middle" font-size="14px" fill="var(--muted)">路徑對應服務</text><rect x="335" y="25" width="130" height="64" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="400.0" y="51" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">extractor</text><text x="400.0" y="73" text-anchor="middle" font-size="14px" fill="var(--muted)">拆解請求</text><rect x="490" y="25" width="130" height="64" rx="8" fill="var(--bg2)" stroke="var(--accent)" stroke-width="2"/><text x="555.0" y="51" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">handler</text><text x="555.0" y="73" text-anchor="middle" font-size="14px" fill="var(--muted)">async 函式</text><rect x="645" y="25" width="130" height="64" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="710.0" y="51" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">回應</text><text x="710.0" y="73" text-anchor="middle" font-size="14px" fill="var(--muted)">IntoResponse</text><path d="M 155,57 L 172,57" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c14)"/><path d="M 310,57 L 327,57" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c14)"/><path d="M 465,57 L 482,57" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c14)"/><path d="M 620,57 L 637,57" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c14)"/><rect x="25" y="125" width="750" height="56" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="400.0" y="151" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">tower::Service 中介軟體</text><text x="400.0" y="173" text-anchor="middle" font-size="14px" fill="var(--muted)">逾時、追蹤、壓縮、授權，可與 hyper、tonic 應用共用</text><rect x="25" y="201" width="750" height="56" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="400.0" y="227" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">Tokio runtime</text><text x="400.0" y="249" text-anchor="middle" font-size="14px" fill="var(--muted)">task 排程器、事件驅動 I/O、計時器</text><rect x="25" y="277" width="750" height="56" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="5"/><text x="400.0" y="303" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">Serde</text><text x="400.0" y="325" text-anchor="middle" font-size="14px" fill="var(--muted)">Serialize 與 Deserialize 讓 Json extractor 與回應可用</text></g></svg><figcaption>圖 14-2：請求經過 Router、extractor 與 handler 變成回應，底下是 tower 中介軟體與 Tokio runtime</figcaption></figure><h2>狀態共享</h2><p>axum 文件列出四種常見的 handler 狀態共享方式：<code>State</code> extractor、request extension、閉包捕獲、task-local 變數。官方建議盡可能用 <code>State</code>，因為型別較安全，缺點是比 task-local 與 extension 更不具動態性。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>State extractor（官方文件）</span><button class="cb-copy" data-code="use axum::{
+    extract::State,
+    routing::get,
+    Router,
+};
+use std::sync::Arc;
+
+struct AppState {
+    // ...
+}
+
+let shared_state = Arc::new(AppState { /* ... */ });
+
+let app = Router::new()
+    .route(&quot;/&quot;, get(handler))
+    .with_state(shared_state);
+
+async fn handler(
+    State(state): State<Arc<AppState>>,
+) {
+    // ...
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> axum</span><span style="color:#ABB2BF">::{</span></span>
+<span class="line"><span style="color:#E5C07B">    extract</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">State</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E5C07B">    routing</span><span style="color:#ABB2BF">::get,</span></span>
+<span class="line"><span style="color:#E5C07B">    Router</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">};</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">sync</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Arc</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> AppState</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // ...</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">let</span><span style="color:#E06C75"> shared_state</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Arc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">AppState</span><span style="color:#ABB2BF"> { </span><span style="color:#7F848E;font-style:italic">/* ... */</span><span style="color:#ABB2BF"> });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">let</span><span style="color:#E06C75"> app</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Router</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">    .</span><span style="color:#61AFEF">route</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"/"</span><span style="color:#ABB2BF">, </span><span style="color:#61AFEF">get</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">handler</span><span style="color:#ABB2BF">))</span></span>
+<span class="line"><span style="color:#ABB2BF">    .</span><span style="color:#61AFEF">with_state</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">shared_state</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">async</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> handler</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#61AFEF">    State</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">state</span><span style="color:#ABB2BF">): </span><span style="color:#E5C07B">State</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">Arc</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">AppState</span><span style="color:#ABB2BF">>>,</span></span>
+<span class="line"><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // ...</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><ul><li>State 會為每個請求複製（clone）；用 <code>Arc</code> 包起來可讓複製很便宜。若所有欄位本來就便宜複製，可直接在 struct 上 <code>#[derive(Clone)]</code>。</li><li>只需要部分狀態時，可用 <code>FromRef</code> 取出子狀態。</li><li><code>Router&lt;S&gt;</code> 的 <code>S</code> 若不是 <code>()</code>，表示這個 router 還「缺少」一個型別 <code>S</code> 的狀態；呼叫 <code>.with_state(s)</code> 補上後通常得到 <code>Router&lt;()&gt;</code>，這才是能傳給 <code>serve()</code> 的形態。</li><li>request extension 的缺點：extractor 找不到對應的 extension（例如忘了加 layer、型別取錯）時，是執行期錯誤，回應 500 Internal Server Error。閉包捕獲則是最囉嗦的做法。</li></ul><div class="call warn"><span class="ci">⚠️</span><div><strong>版本差異：路徑參數語法</strong><p>Reintech 2026 文章的範例用 <code>"/users/:id"</code>，而 docs.rs 最新版 axum 文件的閉包捕獲範例用 <code>"/users/&#123;id&#125;"</code>。兩者不同，素材未說明版本變更的原因，實作時請以你採用的 axum 版本文件為準。</p></div></div><figure class="svg-fig"><img src="/rust/img/ch14/02-comparison-state-sharing-options.png" alt="axum 文件列出的四種狀態共享方式比較" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 14-3：axum 文件列出的四種狀態共享方式比較</figcaption></figure><h2>素材未涵蓋的部分</h2><p>簡介中提到的優雅關閉、觀測性（tracing 與 metrics）與效能調校，本章素材都沒有講解，故未展開；axum 的錯誤處理與中介軟體，素材也只指向文件的 <code>error_handling</code> 與 <code>middleware</code> 模組，沒有範例。若要實作請直接參閱 docs.rs 與 tokio.rs。</p><h2>小結與下一章</h2><p>你現在有了完整的非同步 Web 服務拼圖：Tokio 提供 runtime，axum 負責路由與 extractor，Serde 負責資料轉換，狀態用 <code>State</code> 與 <code>Arc</code> 共享。下一章回到工程面：慣用寫法、測試與發佈，並把前面學的東西組成一個小型命令列專案。</p></div><nav class="cnav" data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" class="prev" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>← 上一章</span><span class="nt" data-astro-cid-ccykbmgk>async/await 基礎</span></a><a href="/rust/ch15-idioms-and-project" class="next" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>下一章 →</span><span class="nt" data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></nav></main></div><script>
+    // Theme
+    const html = document.documentElement;
+    const tt = document.getElementById('tt');
+    const isun = document.getElementById('isun');
+    const imoon = document.getElementById('imoon');
+    function syncIcons() {
+      const dk = html.classList.contains('dark');
+      isun.style.display = dk ? 'block' : 'none';
+      imoon.style.display = dk ? 'none' : 'block';
+    }
+    syncIcons();
+    tt?.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('cc-theme', html.classList.contains('dark') ? 'dark' : 'light');
+      syncIcons();
+    });
+
+    // Progress
+    const pb = document.getElementById('pb');
+    window.addEventListener('scroll', () => {
+      const t = document.documentElement.scrollHeight - window.innerHeight;
+      pb.style.width = t > 0 ? `${(window.scrollY / t) * 100}%` : '0%';
+    }, { passive: true });
+
+    // Sidebar part toggles
+    document.querySelectorAll('.pt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pid;
+        const list = document.querySelector(`[data-pl="${id}"]`);
+        btn.classList.toggle('open');
+        list?.classList.toggle('closed');
+      });
+    });
+
+    // Mobile menu
+    const sb = document.getElementById('sb');
+    const ov = document.getElementById('ov');
+    const mb = document.getElementById('mbtn');
+    const open = () => { sb.classList.add('open'); ov.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close = () => { sb.classList.remove('open'); ov.classList.remove('open'); document.body.style.overflow=''; };
+    mb?.addEventListener('click', open);
+    ov?.addEventListener('click', close);
+  </script></body></html>

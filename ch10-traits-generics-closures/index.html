@@ -1,0 +1,575 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-ccykbmgk><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Trait、泛型、閉包與迭代器 | Rust 實戰指南</title><meta name="description" content="泛型與 trait bound、trait 定義與預設實作、impl Trait、monomorphization 零成本抽象、閉包捕捉規則與 Fn/FnMut/FnOnce、Iterator trait 與 lazy 迭代器。"><link rel="icon" href="/rust/favicon.svg" type="image/svg+xml"><script>
+    (function () {
+      const s = localStorage.getItem('cc-theme');
+      const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark');
+    })();
+  </script><link rel="stylesheet" href="/rust/_astro/DocsLayout.9CQhNdRI.css"><style>.cb-wrap[data-astro-cid-c6nuo4je]{margin-bottom:1.25rem}.cb-bar[data-astro-cid-c6nuo4je]{background:#1a1a2e;border:1px solid #ffffff14;border-bottom-color:#ffffff0d;border-radius:6px 6px 0 0;justify-content:space-between;align-items:center;min-height:1.8rem;padding:.18rem .5rem .18rem .75rem;display:flex}.cb-label[data-astro-cid-c6nuo4je]{color:#a6adc8;letter-spacing:.04em;font-family:Fira Code,Cascadia Code,Consolas,monospace;font-size:.73rem}.cb-inner[data-astro-cid-c6nuo4je] pre{border-radius:0 0 8px 8px!important;margin-bottom:0!important}.cb-copy[data-astro-cid-c6nuo4je]{color:#888;cursor:pointer;background:#ffffff14;border:1px solid #ffffff1f;border-radius:4px;flex-shrink:0;padding:.15rem .55rem;font-size:.7rem;transition:all .15s}.cb-copy[data-astro-cid-c6nuo4je]:hover{color:#fff;background:#ffffff2e}.cb-copy[data-astro-cid-c6nuo4je].copied{color:#4ec9b0;border-color:#4ec9b0}
+</style></head><body data-astro-cid-ccykbmgk><div id="pb" data-astro-cid-ccykbmgk></div><header data-astro-cid-ccykbmgk><div class="hi" data-astro-cid-ccykbmgk><div class="hl" data-astro-cid-ccykbmgk><button id="mbtn" class="ibtn" aria-label="選單" data-astro-cid-ccykbmgk><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" data-astro-cid-ccykbmgk></path></svg></button><a href="/rust/" class="site-name" data-astro-cid-ccykbmgk><span class="logo" data-astro-cid-ccykbmgk>RS</span>&nbsp;&nbsp;Rust 實戰指南</a></div><div class="hr" data-astro-cid-ccykbmgk><button id="tt" class="ibtn" aria-label="切換主題" data-astro-cid-ccykbmgk><svg id="isun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" data-astro-cid-ccykbmgk></path></svg><svg id="imoon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" data-astro-cid-ccykbmgk></path></svg></button></div></div></header><div id="layout" data-astro-cid-ccykbmgk><nav id="sb" data-astro-cid-ccykbmgk><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="0" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 0：前言</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="0" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/preface" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>0.</span><span data-astro-cid-ccykbmgk>前言</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="1" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 1：認識 Rust</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="1" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>1.</span><span data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch02-setup-cargo" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>2.</span><span data-astro-cid-ccykbmgk>安裝與 Cargo：第一個專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>3.</span><span data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>4.</span><span data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="2" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 2：所有權：Rust 的核心</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="2" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>5.</span><span data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>6.</span><span data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch07-lifetimes" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>7.</span><span data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>8.</span><span data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="3" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 3：型別系統與錯誤處理</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="3" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>9.</span><span data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" class="active" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>10.</span><span data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>11.</span><span data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="4" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 4：並行與非同步</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="4" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch12-concurrency" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>12.</span><span data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>13.</span><span data-astro-cid-ccykbmgk>async/await 基礎</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>14.</span><span data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="5" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 5：工程實務與生態</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="5" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch15-idioms-and-project" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>15.</span><span data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch16-systems-linux-embedded" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>16.</span><span data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch17-reality-check" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>17.</span><span data-astro-cid-ccykbmgk>現實檢查：批評、代價與重寫案例</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="6" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 6：附錄</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="6" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/glossary" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>18.</span><span data-astro-cid-ccykbmgk>名詞解釋</span></a></li></ul></div></nav><div id="ov" data-astro-cid-ccykbmgk></div><main data-astro-cid-ccykbmgk><div class="cb" data-astro-cid-ccykbmgk><span class="clabel">第 10 章 · Part 3：型別系統與錯誤處理</span><h1>Trait、泛型、閉包與迭代器</h1><p class="cdesc">Rust 的抽象能力來自四件事：泛型、trait、閉包與迭代器。其中泛型靠編譯期的 monomorphization 達到零執行期成本；trait object 的動態分派不在本章素材範圍，所以本章不對所有 trait 用法下「零成本」的結論。</p><p>上一章我們一直在用 <code>Result&lt;T, E&gt;</code>、<code>From</code> trait 與 <code>unwrap_or_else</code> 裡的閉包，卻沒有解釋它們。本章補上這塊拼圖。對 TypeScript 開發者來說，可以先這樣對照：泛型像 <code>&lt;T&gt;</code>，trait 像 <code>interface</code>（Rust Book 也說 trait 類似其他語言的介面，但有些差異），閉包像箭頭函式，迭代器像 <code>map/filter</code> 鏈。不同之處在於 Rust 在編譯期就把這些抽象展開成具體程式碼。本章範例皆取自 Rust 官方文件 The Rust Programming Language（以下簡稱 Rust Book）。</p><h2>泛型：同一份邏輯，多種型別</h2><p>泛型讓函式、結構、列舉與方法不必綁定具體型別。官方範例先寫了找最大值的 <code>largest_i32</code> 與 <code>largest_char</code> 兩個幾乎相同的函式，再合併成一個泛型函式 <code>largest&lt;T&gt;</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 10-5：泛型 largest</span><button class="cb-copy" data-code="fn largest<T>(list: &amp;[T]) -> &amp;T {
+    let mut largest = &amp;list[0];
+
+    for item in list {
+        if item > largest {
+            largest = item;
+        }
+    }
+
+    largest
+}
+
+fn main() {
+    let number_list = vec![34, 50, 25, 100, 65];
+
+    let result = largest(&amp;number_list);
+    println!(&quot;The largest number is {result}&quot;);
+
+    let char_list = vec!['y', 'm', 'a', 'q'];
+
+    let result = largest(&amp;char_list);
+    println!(&quot;The largest char is {result}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> largest</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">>(</span><span style="color:#E06C75">list</span><span style="color:#ABB2BF">: &#x26;[</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">]) -> &#x26;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> largest</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">list</span><span style="color:#ABB2BF">[</span><span style="color:#D19A66">0</span><span style="color:#ABB2BF">];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    for</span><span style="color:#E06C75"> item</span><span style="color:#C678DD"> in</span><span style="color:#E06C75"> list</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        if</span><span style="color:#E06C75"> item</span><span style="color:#56B6C2"> ></span><span style="color:#E06C75"> largest</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">            largest</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> item</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">    largest</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> number_list</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[</span><span style="color:#D19A66">34</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">50</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">25</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">100</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">65</span><span style="color:#ABB2BF">];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> largest</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">number_list</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The largest number is {result}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> char_list</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[</span><span style="color:#98C379">'y'</span><span style="color:#ABB2BF">, </span><span style="color:#98C379">'m'</span><span style="color:#ABB2BF">, </span><span style="color:#98C379">'a'</span><span style="color:#ABB2BF">, </span><span style="color:#98C379">'q'</span><span style="color:#ABB2BF">];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> largest</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">char_list</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The largest char is {result}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><script type="module">document.querySelectorAll(`.cb-copy`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.code;t&&navigator.clipboard.writeText(t).then(()=>{e.textContent=`已複製!`,e.classList.add(`copied`),setTimeout(()=>{e.textContent=`複製`,e.classList.remove(`copied`)},2e3)})})});</script><p>這份程式碼不能直接編譯，因為編譯器不知道任意型別 <code>T</code> 能不能比較大小。錯誤訊息直接告訴你要加上 <code>PartialOrd</code> 限制，這就是下一節的 trait bound：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：編譯器的錯誤訊息（節錄）</span><button class="cb-copy" data-code="error[E0369]: binary operation `>` cannot be applied to type `&amp;T`
+ --> src/main.rs:5:17
+  |
+5 |         if item > largest {
+  |            ---- ^ ------- &amp;T
+  |            |
+  |            &amp;T
+  |
+help: consider restricting type parameter `T` with trait `PartialOrd`
+  |
+1 | fn largest<T: std::cmp::PartialOrd>(list: &amp;[T]) -> &amp;T {
+  |             ++++++++++++++++++++++" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>error[E0369]: binary operation `>` cannot be applied to type `&#x26;T`</span></span>
+<span class="line"><span> --> src/main.rs:5:17</span></span>
+<span class="line"><span>  |</span></span>
+<span class="line"><span>5 |         if item > largest {</span></span>
+<span class="line"><span>  |            ---- ^ ------- &#x26;T</span></span>
+<span class="line"><span>  |            |</span></span>
+<span class="line"><span>  |            &#x26;T</span></span>
+<span class="line"><span>  |</span></span>
+<span class="line"><span>help: consider restricting type parameter `T` with trait `PartialOrd`</span></span>
+<span class="line"><span>  |</span></span>
+<span class="line"><span>1 | fn largest&#x3C;T: std::cmp::PartialOrd>(list: &#x26;[T]) -> &#x26;T {</span></span>
+<span class="line"><span>  |             ++++++++++++++++++++++</span></span></code></pre></div></div><p>泛型也能用在結構與方法。<code>impl&lt;T&gt; Point&lt;T&gt;</code> 表示對所有 <code>T</code> 實作方法，<code>impl Point&lt;f32&gt;</code> 則只對 <code>f32</code> 版本提供 <code>distance_from_origin</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 10-9／10-10：對泛型與特定型別分別實作方法</span><button class="cb-copy" data-code="struct Point<T> {
+    x: T,
+    y: T,
+}
+
+impl<T> Point<T> {
+    fn x(&amp;self) -> &amp;T {
+        &amp;self.x
+    }
+}
+
+impl Point<f32> {
+    fn distance_from_origin(&amp;self) -> f32 {
+        (self.x.powi(2) + self.y.powi(2)).sqrt()
+    }
+}
+
+fn main() {
+    let p = Point { x: 5, y: 10 };
+
+    println!(&quot;p.x = {}&quot;, p.x());
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> Point</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#E06C75">    x</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75">    y</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">> </span><span style="color:#E5C07B">Point</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> x</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> &#x26;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#ABB2BF">        &#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.x</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#E5C07B"> Point</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">f32</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> distance_from_origin</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">f32</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#ABB2BF">        (</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.x.</span><span style="color:#61AFEF">powi</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">) + </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.y.</span><span style="color:#61AFEF">powi</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">)).</span><span style="color:#61AFEF">sqrt</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> p</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Point</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">5</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">10</span><span style="color:#ABB2BF"> };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"p.x = {}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">p</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">x</span><span style="color:#ABB2BF">());</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h3>泛型沒有執行期成本</h3><p>Rust Book 指出，使用泛型不會讓程式比使用具體型別更慢。原因是編譯器做 monomorphization：把泛型程式碼依實際用到的型別展開成具體版本。官方以 <code>Option&lt;T&gt;</code> 為例，編譯器看到 <code>Some(5)</code> 與 <code>Some(5.0)</code> 後，會展開成類似下面的定義（官方註明編譯器實際用的名稱不同，這裡僅為說明）：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：monomorphization 的示意結果</span><button class="cb-copy" data-code="enum Option_i32 {
+    Some(i32),
+    None,
+}
+
+enum Option_f64 {
+    Some(f64),
+    None,
+}
+
+fn main() {
+    let integer = Option_i32::Some(5);
+    let float = Option_f64::Some(5.0);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">enum</span><span style="color:#E5C07B"> Option_i32</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">    Some</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">    None</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">enum</span><span style="color:#E5C07B"> Option_f64</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">    Some</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">f64</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">    None</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> integer</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Option_i32</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Some</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">5</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> float</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Option_f64</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Some</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">5.0</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><figure class="svg-fig"><svg width="100%" height="auto" viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="monomorphization 展開示意">
+<defs>
+<marker id="arr-c10" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--muted)" /></marker>
+</defs>
+<g font-family="system-ui, sans-serif">
+<rect x="20" y="105" width="200" height="90" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="120" y="141" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">泛型程式碼</text>
+<text x="120" y="170" text-anchor="middle" font-size="16px" fill="var(--text)">Option&lt;T&gt;</text>
+<path d="M 220 150 L 262 150" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr-c10)" />
+<rect x="270" y="95" width="230" height="110" rx="8" fill="var(--bg2)" stroke="var(--accent)" stroke-width="2" />
+<text x="385" y="128" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">編譯器</text>
+<text x="385" y="154" text-anchor="middle" font-size="16px" fill="var(--accent)">monomorphization</text>
+<text x="385" y="182" text-anchor="middle" font-size="15px" fill="var(--text)">依實際用到的型別展開</text>
+<path d="M 500 135 L 530 135 L 530 80 L 552 80" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arr-c10)" />
+<path d="M 500 165 L 530 165 L 530 240 L 552 240" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arr-c10)" />
+<rect x="560" y="40" width="220" height="80" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="670" y="72" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">Option_i32</text>
+<text x="670" y="100" text-anchor="middle" font-size="15px" fill="var(--text)">看到 Some(5)</text>
+<rect x="560" y="200" width="220" height="80" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="670" y="232" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">Option_f64</text>
+<text x="670" y="260" text-anchor="middle" font-size="15px" fill="var(--text)">看到 Some(5.0)</text>
+<text x="400" y="312" text-anchor="middle" font-size="15px" fill="var(--muted)">展開後的名稱僅為說明（Rust Book 註明編譯器實際名稱不同）</text>
+<text x="400" y="332" text-anchor="middle" font-size="15px" fill="var(--muted)">結果：執行期沒有額外成本，代價是較大的執行檔</text>
+</g>
+</svg><figcaption>圖 10-1：monomorphization 把泛型展開成各型別的具體版本（依 Rust Book 說明繪製）</figcaption></figure><p>這與 TypeScript 的泛型不同：TypeScript 的型別參數編譯後會被抹除，Rust 則是為每個型別各產生一份程式碼，用較大的執行檔換取沒有額外的執行期分派成本。（素材未提供執行檔大小的實測數字。）</p><h2>Trait：定義共同行為</h2><p>trait 把一組方法簽章集合起來，定義「某種行為」。官方範例是一個媒體彙整函式庫：<code>NewsArticle</code> 與 <code>SocialPost</code> 都能產生摘要，所以定義 <code>Summary</code> trait，再分別 <code>impl Summary for 型別</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 10-12／10-13：定義並實作 Summary trait</span><button class="cb-copy" data-code="pub trait Summary {
+    fn summarize(&amp;self) -> String;
+}
+
+pub struct NewsArticle {
+    pub headline: String,
+    pub location: String,
+    pub author: String,
+    pub content: String,
+}
+
+impl Summary for NewsArticle {
+    fn summarize(&amp;self) -> String {
+        format!(&quot;{}, by {} ({})&quot;, self.headline, self.author, self.location)
+    }
+}
+
+pub struct SocialPost {
+    pub username: String,
+    pub content: String,
+    pub reply: bool,
+    pub repost: bool,
+}
+
+impl Summary for SocialPost {
+    fn summarize(&amp;self) -> String {
+        format!(&quot;{}: {}&quot;, self.username, self.content)
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> trait</span><span style="color:#E5C07B"> Summary</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> summarize</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> struct</span><span style="color:#E5C07B"> NewsArticle</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> headline</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> location</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> author</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> content</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#E5C07B"> Summary</span><span style="color:#C678DD"> for</span><span style="color:#E5C07B"> NewsArticle</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> summarize</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        format!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{}, by {} ({})"</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.headline, </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.author, </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.location)</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> struct</span><span style="color:#E5C07B"> SocialPost</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> username</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> content</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> reply</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">bool</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> repost</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">bool</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#E5C07B"> Summary</span><span style="color:#C678DD"> for</span><span style="color:#E5C07B"> SocialPost</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> summarize</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        format!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{}: {}"</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.username, </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.content)</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>要注意孤兒規則（官方文件用語為「只能在 trait 或型別至少有一個屬於本地時實作」）：你可以對自己的型別實作標準函式庫的 trait，也可以對標準函式庫型別實作自己的 trait，但不能在自己的 crate 裡替 <code>Vec&lt;T&gt;</code> 實作 <code>Display</code>，因為兩者都不屬於你。</p><h3>預設實作</h3><p>trait 的方法可以有預設實作，而且預設實作能呼叫同一個 trait 中沒有預設實作的方法。因此實作者只需要補上必要的一小部分。下面的 <code>SocialPost</code> 只實作 <code>summarize_author</code>，就能直接使用 <code>summarize</code>，官方輸出為 <code>1 new post: (Read more from @horse_ebooks...)</code>。Rust Book 另外提醒，覆寫某個方法時，無法呼叫該方法的預設實作。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：預設實作呼叫另一個方法</span><button class="cb-copy" data-code="pub trait Summary {
+    fn summarize_author(&amp;self) -> String;
+
+    fn summarize(&amp;self) -> String {
+        format!(&quot;(Read more from {}...)&quot;, self.summarize_author())
+    }
+}
+
+pub struct SocialPost {
+    pub username: String,
+    pub content: String,
+    pub reply: bool,
+    pub repost: bool,
+}
+
+impl Summary for SocialPost {
+    fn summarize_author(&amp;self) -> String {
+        format!(&quot;@{}&quot;, self.username)
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> trait</span><span style="color:#E5C07B"> Summary</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> summarize_author</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> summarize</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        format!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"(Read more from {}...)"</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">summarize_author</span><span style="color:#ABB2BF">())</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> struct</span><span style="color:#E5C07B"> SocialPost</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> username</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> content</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> reply</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">bool</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#E06C75"> repost</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">bool</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#E5C07B"> Summary</span><span style="color:#C678DD"> for</span><span style="color:#E5C07B"> SocialPost</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> summarize_author</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        format!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"@{}"</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.username)</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h3>trait 當參數與 trait bound</h3><p>函式可以用 <code>impl Trait</code> 接受任何實作了該 trait 的型別，它其實是語法糖，完整寫法是 trait bound。兩個參數要求同型別時必須用 trait bound；要求同時實作多個 trait 用 <code>+</code>；限制太多、簽章變得雜亂時改用 <code>where</code> 子句。以下片段取自 Rust Book 不同小節的語法示範（原文為分開的片段，這裡合併顯示，不是單一可編譯程式）：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>依素材改寫：trait bound、+ 語法與 where 子句（分段合併，非獨立程式，需自行補上 Display、Debug 的匯入）</span><button class="cb-copy" data-code="pub fn notify<T: Summary>(item: &amp;T) {
+    println!(&quot;Breaking news! {}&quot;, item.summarize());
+}
+
+pub fn notify(item: &amp;(impl Summary + Display)) {
+}
+
+fn some_function<T, U>(t: &amp;T, u: &amp;U) -> i32
+where
+    T: Display + Clone,
+    U: Clone + Debug,
+{
+    unimplemented!()
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> notify</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Summary</span><span style="color:#ABB2BF">>(</span><span style="color:#E06C75">item</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Breaking news! {}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">item</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">summarize</span><span style="color:#ABB2BF">());</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> notify</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">item</span><span style="color:#ABB2BF">: &#x26;(</span><span style="color:#C678DD">impl</span><span style="color:#E5C07B"> Summary</span><span style="color:#ABB2BF"> + </span><span style="color:#E5C07B">Display</span><span style="color:#ABB2BF">)) {</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> some_function</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">U</span><span style="color:#ABB2BF">>(</span><span style="color:#E06C75">t</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">u</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">U</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">i32</span></span>
+<span class="line"><span style="color:#C678DD">where</span></span>
+<span class="line"><span style="color:#E5C07B">    T</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Display</span><span style="color:#ABB2BF"> + </span><span style="color:#E5C07B">Clone</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E5C07B">    U</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Clone</span><span style="color:#ABB2BF"> + </span><span style="color:#E5C07B">Debug</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">{</span></span>
+<span class="line"><span style="color:#61AFEF">    unimplemented!</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p><code>impl Trait</code> 也能用在回傳型別，回傳「某個實作了 Summary 的型別」而不必寫出具體型別，這對閉包與迭代器特別有用，因為它們的型別只有編譯器知道。但限制是只能回傳單一型別：同一個函式用 <code>if</code> 分支分別回傳 <code>NewsArticle</code> 或 <code>SocialPost</code> 是不允許的。Rust Book 說明要實現這種行為需要 trait object，素材中該章節在本書範圍之外，這裡不展開。</p><p>trait bound 還能讓方法「有條件地存在」。下面的 <code>Pair&lt;T&gt;</code> 永遠有 <code>new</code>，但只有 <code>T</code> 同時實作 <code>Display</code> 與 <code>PartialOrd</code> 時才有 <code>cmp_display</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 10-15：依 trait bound 有條件實作方法</span><button class="cb-copy" data-code="use std::fmt::Display;
+
+struct Pair<T> {
+    x: T,
+    y: T,
+}
+
+impl<T> Pair<T> {
+    fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+}
+
+impl<T: Display + PartialOrd> Pair<T> {
+    fn cmp_display(&amp;self) {
+        if self.x >= self.y {
+            println!(&quot;The largest member is x = {}&quot;, self.x);
+        } else {
+            println!(&quot;The largest member is y = {}&quot;, self.y);
+        }
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">fmt</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Display</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> Pair</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#E06C75">    x</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75">    y</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">> </span><span style="color:#E5C07B">Pair</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> new</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">Self</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">        Self</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Display</span><span style="color:#ABB2BF"> + </span><span style="color:#E5C07B">PartialOrd</span><span style="color:#ABB2BF">> </span><span style="color:#E5C07B">Pair</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> cmp_display</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#C678DD">        if</span><span style="color:#E5C07B"> self</span><span style="color:#ABB2BF">.x </span><span style="color:#56B6C2">>=</span><span style="color:#E5C07B"> self</span><span style="color:#ABB2BF">.y {</span></span>
+<span class="line"><span style="color:#61AFEF">            println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The largest member is x = {}"</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.x);</span></span>
+<span class="line"><span style="color:#ABB2BF">        } </span><span style="color:#C678DD">else</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">            println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The largest member is y = {}"</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.y);</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><figure class="svg-fig"><img src="/rust/img/ch10/01-framework-trait-default-and-bound.png" alt="trait 的預設實作與 trait bound 結構示意" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 10-2：trait 的預設實作與 trait bound</figcaption></figure><h2>閉包：能捕捉環境的匿名函式</h2><p>閉包是可以存進變數或當參數傳遞的匿名函式，語法是 <code>|參數| 運算式</code>。官方用 T 恤公司送贈品的範例：使用者有偏好色就給偏好色，沒有的話呼叫閉包 <code>|| self.most_stocked()</code> 挑庫存最多的顏色。閉包捕捉了 <code>self</code>，標準函式庫完全不需要知道 <code>Inventory</code> 的存在。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 13-1：unwrap_or_else 搭配閉包</span><button class="cb-copy" data-code="#[derive(Debug, PartialEq, Copy, Clone)]
+enum ShirtColor {
+    Red,
+    Blue,
+}
+
+struct Inventory {
+    shirts: Vec<ShirtColor>,
+}
+
+impl Inventory {
+    fn giveaway(&amp;self, user_preference: Option<ShirtColor>) -> ShirtColor {
+        user_preference.unwrap_or_else(|| self.most_stocked())
+    }
+
+    fn most_stocked(&amp;self) -> ShirtColor {
+        let mut num_red = 0;
+        let mut num_blue = 0;
+
+        for color in &amp;self.shirts {
+            match color {
+                ShirtColor::Red => num_red += 1,
+                ShirtColor::Blue => num_blue += 1,
+            }
+        }
+        if num_red > num_blue {
+            ShirtColor::Red
+        } else {
+            ShirtColor::Blue
+        }
+    }
+}
+
+fn main() {
+    let store = Inventory {
+        shirts: vec![ShirtColor::Blue, ShirtColor::Red, ShirtColor::Blue],
+    };
+
+    let user_pref1 = Some(ShirtColor::Red);
+    let giveaway1 = store.giveaway(user_pref1);
+    println!(
+        &quot;The user with preference {:?} gets {:?}&quot;,
+        user_pref1, giveaway1
+    );
+
+    let user_pref2 = None;
+    let giveaway2 = store.giveaway(user_pref2);
+    println!(
+        &quot;The user with preference {:?} gets {:?}&quot;,
+        user_pref2, giveaway2
+    );
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#ABB2BF">#[derive(</span><span style="color:#E5C07B">Debug</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">PartialEq</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Copy</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Clone</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#C678DD">enum</span><span style="color:#E5C07B"> ShirtColor</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">    Red</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E5C07B">    Blue</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> Inventory</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    shirts</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Vec</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">ShirtColor</span><span style="color:#ABB2BF">>,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#E5C07B"> Inventory</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> giveaway</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">user_preference</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Option</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">ShirtColor</span><span style="color:#ABB2BF">>) -> </span><span style="color:#E5C07B">ShirtColor</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">        user_preference</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">unwrap_or_else</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">||</span><span style="color:#E5C07B"> self</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">most_stocked</span><span style="color:#ABB2BF">())</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> most_stocked</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">ShirtColor</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> num_red</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> num_blue</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        for</span><span style="color:#E06C75"> color</span><span style="color:#C678DD"> in</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.shirts {</span></span>
+<span class="line"><span style="color:#C678DD">            match</span><span style="color:#E06C75"> color</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">                ShirtColor</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Red</span><span style="color:#ABB2BF"> => </span><span style="color:#E06C75">num_red</span><span style="color:#56B6C2"> +=</span><span style="color:#D19A66"> 1</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E5C07B">                ShirtColor</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Blue</span><span style="color:#ABB2BF"> => </span><span style="color:#E06C75">num_blue</span><span style="color:#56B6C2"> +=</span><span style="color:#D19A66"> 1</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">            }</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#C678DD">        if</span><span style="color:#E06C75"> num_red</span><span style="color:#56B6C2"> ></span><span style="color:#E06C75"> num_blue</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">            ShirtColor</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Red</span></span>
+<span class="line"><span style="color:#ABB2BF">        } </span><span style="color:#C678DD">else</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">            ShirtColor</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Blue</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> store</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Inventory</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">        shirts</span><span style="color:#ABB2BF">: </span><span style="color:#61AFEF">vec!</span><span style="color:#ABB2BF">[</span><span style="color:#E5C07B">ShirtColor</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Blue</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">ShirtColor</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Red</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">ShirtColor</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Blue</span><span style="color:#ABB2BF">],</span></span>
+<span class="line"><span style="color:#ABB2BF">    };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> user_pref1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Some</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">ShirtColor</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Red</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> giveaway1</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> store</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">giveaway</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">user_pref1</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#98C379">        "The user with preference {:?} gets {:?}"</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75">        user_pref1</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">giveaway1</span></span>
+<span class="line"><span style="color:#ABB2BF">    );</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> user_pref2</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> None</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> giveaway2</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> store</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">giveaway</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">user_pref2</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#98C379">        "The user with preference {:?} gets {:?}"</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75">        user_pref2</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">giveaway2</span></span>
+<span class="line"><span style="color:#ABB2BF">    );</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：執行輸出</span><button class="cb-copy" data-code="The user with preference Some(Red) gets Red
+The user with preference None gets Blue" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>The user with preference Some(Red) gets Red</span></span>
+<span class="line"><span>The user with preference None gets Blue</span></span></code></pre></div></div><h3>型別推斷與標註</h3><p>閉包通常不需要標註參數與回傳型別，因為它的使用範圍很窄，編譯器能推斷。官方列出函式與閉包四種寫法的對照；需要注意的是，閉包的型別一旦被第一次呼叫推斷出來就固定了，之後用另一種型別呼叫會編譯失敗。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：函式與閉包語法對照</span><button class="cb-copy" data-code="fn  add_one_v1   (x: u32) -> u32 { x + 1 }
+let add_one_v2 = |x: u32| -> u32 { x + 1 };
+let add_one_v3 = |x|             { x + 1 };
+let add_one_v4 = |x|               x + 1  ;" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#E06C75">  add_one_v1</span><span style="color:#ABB2BF">   (</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u32</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">u32</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF"> + </span><span style="color:#D19A66">1</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"><span style="color:#C678DD">let</span><span style="color:#E06C75"> add_one_v2</span><span style="color:#56B6C2"> =</span><span style="color:#56B6C2"> |</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u32</span><span style="color:#56B6C2">|</span><span style="color:#ABB2BF"> -> </span><span style="color:#E5C07B">u32</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF"> + </span><span style="color:#D19A66">1</span><span style="color:#ABB2BF"> };</span></span>
+<span class="line"><span style="color:#C678DD">let</span><span style="color:#E06C75"> add_one_v3</span><span style="color:#56B6C2"> =</span><span style="color:#56B6C2"> |</span><span style="color:#E06C75">x</span><span style="color:#56B6C2">|</span><span style="color:#ABB2BF">             { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF"> + </span><span style="color:#D19A66">1</span><span style="color:#ABB2BF"> };</span></span>
+<span class="line"><span style="color:#C678DD">let</span><span style="color:#E06C75"> add_one_v4</span><span style="color:#56B6C2"> =</span><span style="color:#56B6C2"> |</span><span style="color:#E06C75">x</span><span style="color:#56B6C2">|</span><span style="color:#E06C75">               x</span><span style="color:#ABB2BF"> + </span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">  ;</span></span></code></pre></div></div><h3>三種捕捉方式與 move</h3><p>閉包依內容決定如何捕捉環境：不可變借用、可變借用、或取得所有權，正好對應函式參數的三種接收方式。下例的閉包因為呼叫 <code>push</code> 而捕捉可變參考，所以在定義與呼叫之間不能再使用 <code>list</code>。想強制取得所有權可以加 <code>move</code>，主要用途是把資料搬進新的執行緒，第 12 章談並行時會再用到：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 13-5：閉包可變借用</span><button class="cb-copy" data-code="fn main() {
+    let mut list = vec![1, 2, 3];
+    println!(&quot;Before defining closure: {list:?}&quot;);
+
+    let mut borrows_mutably = || list.push(7);
+
+    borrows_mutably();
+    println!(&quot;After calling closure: {list:?}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> list</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">];</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Before defining closure: {list:?}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> borrows_mutably</span><span style="color:#56B6C2"> =</span><span style="color:#56B6C2"> ||</span><span style="color:#E06C75"> list</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">push</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">7</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    borrows_mutably</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"After calling closure: {list:?}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 13-6：move 把所有權搬進執行緒</span><button class="cb-copy" data-code="use std::thread;
+
+fn main() {
+    let list = vec![1, 2, 3];
+    println!(&quot;Before defining closure: {list:?}&quot;);
+
+    thread::spawn(move || println!(&quot;From thread: {list:?}&quot;))
+        .join()
+        .unwrap();
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::thread;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> list</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">];</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Before defining closure: {list:?}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E5C07B">    thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">move</span><span style="color:#56B6C2"> ||</span><span style="color:#61AFEF"> println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"From thread: {list:?}"</span><span style="color:#ABB2BF">))</span></span>
+<span class="line"><span style="color:#ABB2BF">        .</span><span style="color:#61AFEF">join</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">        .</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h3>Fn、FnMut、FnOnce</h3><p>閉包會自動實作三個 trait 的其中一些，取決於它如何處理捕捉的值：</p><table><thead><tr><th>trait</th><th>閉包的行為</th><th>可呼叫次數</th></tr></thead><tbody><tr><td><code>FnOnce</code></td><td>可能把捕捉的值移出閉包本體；所有閉包都至少實作它</td><td>一次</td></tr><tr><td><code>FnMut</code></td><td>不移出捕捉的值，但可能修改它</td><td>多次</td></tr><tr><td><code>Fn</code></td><td>不移出也不修改捕捉的值，或什麼都沒捕捉</td><td>多次</td></tr></tbody></table><p>標準函式庫用 trait bound 限制能傳入哪種閉包。<code>unwrap_or_else</code> 只會呼叫一次，所以要求 <code>FnOnce</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：unwrap_or_else 的定義</span><button class="cb-copy" data-code="impl<T> Option<T> {
+    pub fn unwrap_or_else<F>(self, f: F) -> T
+    where
+        F: FnOnce() -> T
+    {
+        match self {
+            Some(x) => x,
+            None => f(),
+        }
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">impl</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">> </span><span style="color:#E5C07B">Option</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">    pub</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> unwrap_or_else</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">F</span><span style="color:#ABB2BF">>(</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">f</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">F</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">T</span></span>
+<span class="line"><span style="color:#C678DD">    where</span></span>
+<span class="line"><span style="color:#E5C07B">        F</span><span style="color:#ABB2BF">: </span><span style="color:#61AFEF">FnOnce</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">T</span></span>
+<span class="line"><span style="color:#ABB2BF">    {</span></span>
+<span class="line"><span style="color:#C678DD">        match</span><span style="color:#E5C07B"> self</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">            Some</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">) => </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E5C07B">            None</span><span style="color:#ABB2BF"> => </span><span style="color:#61AFEF">f</span><span style="color:#ABB2BF">(),</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>相對地，<code>sort_by_key</code> 對每個元素都呼叫一次閉包，所以要求 <code>FnMut</code>。若閉包把捕捉的值移出（官方範例是把 <code>value</code> push 進外部的 vector），就只實作 <code>FnOnce</code>，無法傳給 <code>sort_by_key</code>。</p><figure class="svg-fig"><img src="/rust/img/ch10/02-comparison-fn-fnmut-fnonce.png" alt="Fn、FnMut、FnOnce 三種閉包 trait 的行為與可呼叫次數對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 10-3：Fn、FnMut、FnOnce 三種閉包 trait 的行為與可呼叫次數</figcaption></figure><h2>迭代器：惰性的序列處理</h2><p>Rust 的迭代器是 lazy 的：建立迭代器本身不做任何事，直到呼叫消耗它的方法才會執行。所有迭代器都實作標準函式庫的 <code>Iterator</code> trait，只需要定義 <code>next</code> 方法，每次回傳 <code>Some(元素)</code>，結束時回傳 <code>None</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：Iterator trait 的定義</span><button class="cb-copy" data-code="pub trait Iterator {
+    type Item;
+
+    fn next(&amp;mut self) -> Option<Self::Item>;
+
+    // methods with default implementations elided
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> trait</span><span style="color:#E5C07B"> Iterator</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    type</span><span style="color:#E5C07B"> Item</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> next</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E5C07B"> self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">Option</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">Self</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Item</span><span style="color:#ABB2BF">>;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // methods with default implementations elided</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p><code>type Item</code> 是關聯型別，素材說明之後的章節會深入介紹。呼叫 <code>next</code> 會改變迭代器內部狀態，所以變數要宣告成 <code>mut</code>；<code>iter()</code> 產生的是不可變參考的迭代器，想取得所有權要用 <code>into_iter</code>。</p><ul><li><strong>消耗型方法</strong>（consuming adapters）：會呼叫 <code>next</code> 把迭代器用完，例如 <code>sum</code>；呼叫後原迭代器不能再用。</li><li><strong>迭代器轉接器</strong>（iterator adapters）：例如 <code>map</code>、<code>filter</code>，不消耗迭代器，而是產生另一個迭代器；因為是 lazy，必須再接一個消耗型方法（如 <code>collect</code>）才會真的執行，否則編譯器會警告「iterators are lazy and do nothing unless consumed」。</li></ul><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 13-15：map 搭配 collect</span><button class="cb-copy" data-code="fn main() {
+    let v1: Vec<i32> = vec![1, 2, 3];
+
+    let v2: Vec<_> = v1.iter().map(|x| x + 1).collect();
+
+    assert_eq!(v2, vec![2, 3, 4]);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> v1</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Vec</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">> </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> v2</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Vec</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E06C75">_</span><span style="color:#ABB2BF">> </span><span style="color:#56B6C2">=</span><span style="color:#E06C75"> v1</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">iter</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">map</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">|</span><span style="color:#E06C75">x</span><span style="color:#56B6C2">|</span><span style="color:#E06C75"> x</span><span style="color:#ABB2BF"> + </span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">collect</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    assert_eq!</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">v2</span><span style="color:#ABB2BF">, </span><span style="color:#61AFEF">vec!</span><span style="color:#ABB2BF">[</span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">4</span><span style="color:#ABB2BF">]);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>閉包與迭代器結合時，閉包常會捕捉環境。下例的 <code>filter</code> 閉包捕捉了參數 <code>shoe_size</code>，只留下尺寸相符的鞋子：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 13-16：filter 閉包捕捉環境（略去測試）</span><button class="cb-copy" data-code="#[derive(PartialEq, Debug)]
+struct Shoe {
+    size: u32,
+    style: String,
+}
+
+fn shoes_in_size(shoes: Vec<Shoe>, shoe_size: u32) -> Vec<Shoe> {
+    shoes.into_iter().filter(|s| s.size == shoe_size).collect()
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#ABB2BF">#[derive(</span><span style="color:#E5C07B">PartialEq</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Debug</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> Shoe</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    size</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u32</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75">    style</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> shoes_in_size</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">shoes</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Vec</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">Shoe</span><span style="color:#ABB2BF">>, </span><span style="color:#E06C75">shoe_size</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u32</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">Vec</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">Shoe</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#E06C75">    shoes</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">into_iter</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">filter</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">|</span><span style="color:#E06C75">s</span><span style="color:#56B6C2">|</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">.size </span><span style="color:#56B6C2">==</span><span style="color:#E06C75"> shoe_size</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">collect</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="call info"><span class="ci">ℹ️</span><div><strong>與 TypeScript 的對照</strong><p>JavaScript 的 <code>arr.map(...).filter(...)</code> 每一步都會產生新的陣列；Rust 的轉接器鏈是惰性的，最後一次消耗才逐元素走完整條管線。素材沒有提供兩者的效能比較數據，這裡只談設計差異。</p></div></div><figure class="svg-fig"><img src="/rust/img/ch10/03-flowchart-lazy-iterator-pipeline.png" alt="迭代器轉接器與消耗型方法組成的惰性管線" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 10-4：迭代器的惰性管線：轉接器只描述步驟，消耗型方法才真正執行</figcaption></figure><h2>小結</h2><ul><li>泛型靠 monomorphization 達到零執行期成本；trait bound 是對泛型型別的行為要求。</li><li>trait 可以有預設實作，也可用 <code>impl Trait</code> 當參數或回傳型別（回傳時限單一型別）。</li><li>閉包依內容自動捕捉環境，並依處理方式實作 <code>Fn</code>／<code>FnMut</code>／<code>FnOnce</code>。</li><li>迭代器是惰性的，轉接器要搭配消耗型方法才會執行。</li></ul><p>閉包的 <code>move</code> 與所有權的關係，在談到執行緒時會變得非常重要。下一章「智慧指標與 unsafe」會先看 <code>Box</code>、<code>Rc</code> 這些擁有資料的指標型別，以及 Rust 如何讓你在需要時暫時離開編譯器的保護。</p></div><nav class="cnav" data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" class="prev" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>← 上一章</span><span class="nt" data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a><a href="/rust/ch11-smart-pointers-unsafe" class="next" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>下一章 →</span><span class="nt" data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></nav></main></div><script>
+    // Theme
+    const html = document.documentElement;
+    const tt = document.getElementById('tt');
+    const isun = document.getElementById('isun');
+    const imoon = document.getElementById('imoon');
+    function syncIcons() {
+      const dk = html.classList.contains('dark');
+      isun.style.display = dk ? 'block' : 'none';
+      imoon.style.display = dk ? 'none' : 'block';
+    }
+    syncIcons();
+    tt?.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('cc-theme', html.classList.contains('dark') ? 'dark' : 'light');
+      syncIcons();
+    });
+
+    // Progress
+    const pb = document.getElementById('pb');
+    window.addEventListener('scroll', () => {
+      const t = document.documentElement.scrollHeight - window.innerHeight;
+      pb.style.width = t > 0 ? `${(window.scrollY / t) * 100}%` : '0%';
+    }, { passive: true });
+
+    // Sidebar part toggles
+    document.querySelectorAll('.pt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pid;
+        const list = document.querySelector(`[data-pl="${id}"]`);
+        btn.classList.toggle('open');
+        list?.classList.toggle('closed');
+      });
+    });
+
+    // Mobile menu
+    const sb = document.getElementById('sb');
+    const ov = document.getElementById('ov');
+    const mb = document.getElementById('mbtn');
+    const open = () => { sb.classList.add('open'); ov.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close = () => { sb.classList.remove('open'); ov.classList.remove('open'); document.body.style.overflow=''; };
+    mb?.addEventListener('click', open);
+    ov?.addEventListener('click', close);
+  </script></body></html>

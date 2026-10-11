@@ -1,0 +1,391 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-ccykbmgk><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>慣用寫法與小型專案 | Rust 實戰指南</title><meta name="description" content="Rust 慣用的錯誤處理、Newtype、Builder、模組組織、測試與文件測試，以及發布 crate 到 crates.io 的流程。"><link rel="icon" href="/rust/favicon.svg" type="image/svg+xml"><script>
+    (function () {
+      const s = localStorage.getItem('cc-theme');
+      const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark');
+    })();
+  </script><link rel="stylesheet" href="/rust/_astro/DocsLayout.9CQhNdRI.css"><style>.cb-wrap[data-astro-cid-c6nuo4je]{margin-bottom:1.25rem}.cb-bar[data-astro-cid-c6nuo4je]{background:#1a1a2e;border:1px solid #ffffff14;border-bottom-color:#ffffff0d;border-radius:6px 6px 0 0;justify-content:space-between;align-items:center;min-height:1.8rem;padding:.18rem .5rem .18rem .75rem;display:flex}.cb-label[data-astro-cid-c6nuo4je]{color:#a6adc8;letter-spacing:.04em;font-family:Fira Code,Cascadia Code,Consolas,monospace;font-size:.73rem}.cb-inner[data-astro-cid-c6nuo4je] pre{border-radius:0 0 8px 8px!important;margin-bottom:0!important}.cb-copy[data-astro-cid-c6nuo4je]{color:#888;cursor:pointer;background:#ffffff14;border:1px solid #ffffff1f;border-radius:4px;flex-shrink:0;padding:.15rem .55rem;font-size:.7rem;transition:all .15s}.cb-copy[data-astro-cid-c6nuo4je]:hover{color:#fff;background:#ffffff2e}.cb-copy[data-astro-cid-c6nuo4je].copied{color:#4ec9b0;border-color:#4ec9b0}
+</style></head><body data-astro-cid-ccykbmgk><div id="pb" data-astro-cid-ccykbmgk></div><header data-astro-cid-ccykbmgk><div class="hi" data-astro-cid-ccykbmgk><div class="hl" data-astro-cid-ccykbmgk><button id="mbtn" class="ibtn" aria-label="選單" data-astro-cid-ccykbmgk><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" data-astro-cid-ccykbmgk></path></svg></button><a href="/rust/" class="site-name" data-astro-cid-ccykbmgk><span class="logo" data-astro-cid-ccykbmgk>RS</span>&nbsp;&nbsp;Rust 實戰指南</a></div><div class="hr" data-astro-cid-ccykbmgk><button id="tt" class="ibtn" aria-label="切換主題" data-astro-cid-ccykbmgk><svg id="isun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" data-astro-cid-ccykbmgk></path></svg><svg id="imoon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" data-astro-cid-ccykbmgk></path></svg></button></div></div></header><div id="layout" data-astro-cid-ccykbmgk><nav id="sb" data-astro-cid-ccykbmgk><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="0" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 0：前言</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="0" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/preface" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>0.</span><span data-astro-cid-ccykbmgk>前言</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="1" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 1：認識 Rust</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="1" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>1.</span><span data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch02-setup-cargo" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>2.</span><span data-astro-cid-ccykbmgk>安裝與 Cargo：第一個專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>3.</span><span data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>4.</span><span data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="2" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 2：所有權：Rust 的核心</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="2" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>5.</span><span data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>6.</span><span data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch07-lifetimes" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>7.</span><span data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>8.</span><span data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="3" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 3：型別系統與錯誤處理</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="3" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>9.</span><span data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>10.</span><span data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>11.</span><span data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="4" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 4：並行與非同步</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="4" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch12-concurrency" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>12.</span><span data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>13.</span><span data-astro-cid-ccykbmgk>async/await 基礎</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>14.</span><span data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="5" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 5：工程實務與生態</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="5" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch15-idioms-and-project" class="active" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>15.</span><span data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch16-systems-linux-embedded" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>16.</span><span data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch17-reality-check" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>17.</span><span data-astro-cid-ccykbmgk>現實檢查：批評、代價與重寫案例</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="6" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 6：附錄</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="6" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/glossary" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>18.</span><span data-astro-cid-ccykbmgk>名詞解釋</span></a></li></ul></div></nav><div id="ov" data-astro-cid-ccykbmgk></div><main data-astro-cid-ccykbmgk><div class="cb" data-astro-cid-ccykbmgk><span class="clabel">第 15 章 · Part 5：工程實務與生態</span><h1>慣用寫法與小型專案</h1><p class="cdesc">用明確型別、測試與文件建立可維護的 Rust 專案，並了解 crate 發布流程。</p><p>前面各章教的是語言本身；這一章看「Rust 程式設計師平常怎麼寫」：慣用模式、測試、文件與發佈。慣用模式的主要素材是 ECC 專案裡的 <code>rust-patterns</code> 技能文件（GitHub 上的社群文件，原文為簡體中文，非官方），測試、文件與發佈則取自官方 Rust Book。</p><h2>慣用模式</h2><p>該文件把慣用做法歸納為六個領域：所有權與借用、<code>Result</code>／<code>?</code> 錯誤傳播、列舉與窮盡匹配、trait 與泛型、並發、依領域組織且最小化 <code>pub</code> 的模組結構。以下挑幾個最常用的。</p><h3>錯誤處理：用 ? 傳遞，不在正式環境 unwrap</h3><p>文件的建議：錯誤要帶著上下文往上傳，不要在生產程式碼裡 <code>unwrap()</code>。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>rust-patterns 文件範例</span><button class="cb-copy" data-code="// Good: Propagate errors with context
+use anyhow::{Context, Result};
+
+fn load_config(path: &amp;str) -> Result<Config> {
+    let content = std::fs::read_to_string(path)
+        .with_context(|| format!(&quot;failed to read config from {path}&quot;))?;
+    let config: Config = toml::from_str(&amp;content)
+        .with_context(|| format!(&quot;failed to parse config from {path}&quot;))?;
+    Ok(config)
+}
+
+// Bad: Panics on error
+fn load_config_bad(path: &amp;str) -> Config {
+    let content = std::fs::read_to_string(path).unwrap(); // Panics!
+    toml::from_str(&amp;content).unwrap()
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#7F848E;font-style:italic">// Good: Propagate errors with context</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> anyhow</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">Context</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> load_config</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">path</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">Config</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> content</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">fs</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">read_to_string</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">path</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">        .</span><span style="color:#61AFEF">with_context</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">||</span><span style="color:#61AFEF"> format!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"failed to read config from {path}"</span><span style="color:#ABB2BF">))?;</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> config</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Config</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> toml</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_str</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">content</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">        .</span><span style="color:#61AFEF">with_context</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">||</span><span style="color:#61AFEF"> format!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"failed to parse config from {path}"</span><span style="color:#ABB2BF">))?;</span></span>
+<span class="line"><span style="color:#E5C07B">    Ok</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">config</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// Bad: Panics on error</span></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> load_config_bad</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">path</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">Config</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> content</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">fs</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">read_to_string</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">path</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">(); </span><span style="color:#7F848E;font-style:italic">// Panics!</span></span>
+<span class="line"><span style="color:#E5C07B">    toml</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_str</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">content</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><script type="module">document.querySelectorAll(`.cb-copy`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.code;t&&navigator.clipboard.writeText(t).then(()=>{e.textContent=`已複製!`,e.classList.add(`copied`),setTimeout(()=>{e.textContent=`複製`,e.classList.remove(`copied`)},2e3)})})});</script><p>另一條規則：函式庫用 <code>thiserror</code> 定義結構化、有型別的錯誤；應用程式用 <code>anyhow</code> 做彈性處理（錯誤處理的基礎見第 9 章）。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>rust-patterns 文件範例</span><button class="cb-copy" data-code="// Library code: structured, typed errors
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum StorageError {
+    #[error(&quot;record not found: {id}&quot;)]
+    NotFound { id: String },
+    #[error(&quot;connection failed&quot;)]
+    Connection(#[from] std::io::Error),
+    #[error(&quot;invalid data: {0}&quot;)]
+    InvalidData(String),
+}
+
+// Application code: flexible error handling
+use anyhow::{bail, Result};
+
+fn run() -> Result<()> {
+    let config = load_config(&quot;app.toml&quot;)?;
+    if config.workers == 0 {
+        bail!(&quot;worker count must be > 0&quot;);
+    }
+    Ok(())
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#7F848E;font-style:italic">// Library code: structured, typed errors</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> thiserror</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Error</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[derive(</span><span style="color:#E5C07B">Debug</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Error</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> enum</span><span style="color:#E5C07B"> StorageError</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#ABB2BF">    #[error(</span><span style="color:#98C379">"record not found: {id}"</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#E5C07B">    NotFound</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">id</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF"> },</span></span>
+<span class="line"><span style="color:#ABB2BF">    #[error(</span><span style="color:#98C379">"connection failed"</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#61AFEF">    Connection</span><span style="color:#ABB2BF">(#[from] </span><span style="color:#E5C07B">std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">io</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Error</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">    #[error(</span><span style="color:#98C379">"invalid data: {0}"</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#61AFEF">    InvalidData</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// Application code: flexible error handling</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> anyhow</span><span style="color:#ABB2BF">::{bail, </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> run</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;()> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> config</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> load_config</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"app.toml"</span><span style="color:#ABB2BF">)?;</span></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#E06C75"> config</span><span style="color:#ABB2BF">.workers </span><span style="color:#56B6C2">==</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        bail!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"worker count must be > 0"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#E5C07B">    Ok</span><span style="color:#ABB2BF">(())</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><figure class="svg-fig"><img src="/rust/img/ch15/02-comparison-lib-vs-app-errors.png" alt="函式庫與應用程式的錯誤處理工具對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 15-1：函式庫與應用程式的錯誤處理工具對照</figcaption></figure><h3>讓非法狀態無法表示，且窮盡匹配</h3><p>用列舉建模狀態，每個變體只帶合法狀態才有的資料。文件也建議：業務邏輯的 <code>match</code> 不要用萬用 <code>_</code>，這樣新增變體時編譯器會逼你處理，而不是被默默忽略。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>rust-patterns 文件範例</span><button class="cb-copy" data-code="// Good: Impossible states are unrepresentable
+enum ConnectionState {
+    Disconnected,
+    Connecting { attempt: u32 },
+    Connected { session_id: String },
+    Failed { reason: String, retries: u32 },
+}
+
+fn handle(state: &amp;ConnectionState) {
+    match state {
+        ConnectionState::Disconnected => connect(),
+        ConnectionState::Connecting { attempt } if *attempt > 3 => abort(),
+        ConnectionState::Connecting { .. } => wait(),
+        ConnectionState::Connected { session_id } => use_session(session_id),
+        ConnectionState::Failed { retries, .. } if *retries < 5 => retry(),
+        ConnectionState::Failed { reason, .. } => log_failure(reason),
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#7F848E;font-style:italic">// Good: Impossible states are unrepresentable</span></span>
+<span class="line"><span style="color:#C678DD">enum</span><span style="color:#E5C07B"> ConnectionState</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">    Disconnected</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E5C07B">    Connecting</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">attempt</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u32</span><span style="color:#ABB2BF"> },</span></span>
+<span class="line"><span style="color:#E5C07B">    Connected</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">session_id</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF"> },</span></span>
+<span class="line"><span style="color:#E5C07B">    Failed</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">reason</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">retries</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u32</span><span style="color:#ABB2BF"> },</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> handle</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">state</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">ConnectionState</span><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#C678DD">    match</span><span style="color:#E06C75"> state</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">        ConnectionState</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Disconnected</span><span style="color:#ABB2BF"> => </span><span style="color:#61AFEF">connect</span><span style="color:#ABB2BF">(),</span></span>
+<span class="line"><span style="color:#E5C07B">        ConnectionState</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Connecting</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">attempt</span><span style="color:#ABB2BF"> } </span><span style="color:#C678DD">if</span><span style="color:#ABB2BF"> *</span><span style="color:#E06C75">attempt</span><span style="color:#56B6C2"> ></span><span style="color:#D19A66"> 3</span><span style="color:#ABB2BF"> => </span><span style="color:#61AFEF">abort</span><span style="color:#ABB2BF">(),</span></span>
+<span class="line"><span style="color:#E5C07B">        ConnectionState</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Connecting</span><span style="color:#ABB2BF"> { .. } => </span><span style="color:#61AFEF">wait</span><span style="color:#ABB2BF">(),</span></span>
+<span class="line"><span style="color:#E5C07B">        ConnectionState</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Connected</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">session_id</span><span style="color:#ABB2BF"> } => </span><span style="color:#61AFEF">use_session</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">session_id</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">        ConnectionState</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Failed</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">retries</span><span style="color:#ABB2BF">, .. } </span><span style="color:#C678DD">if</span><span style="color:#ABB2BF"> *</span><span style="color:#E06C75">retries</span><span style="color:#56B6C2"> &#x3C;</span><span style="color:#D19A66"> 5</span><span style="color:#ABB2BF"> => </span><span style="color:#61AFEF">retry</span><span style="color:#ABB2BF">(),</span></span>
+<span class="line"><span style="color:#E5C07B">        ConnectionState</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Failed</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">reason</span><span style="color:#ABB2BF">, .. } => </span><span style="color:#61AFEF">log_failure</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">reason</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h3>Newtype 與 Builder</h3><p>Newtype 把基本型別包成獨立型別，避免參數對調：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>rust-patterns 文件範例</span><button class="cb-copy" data-code="// Good: Distinct types prevent mixing up arguments
+struct UserId(u64);
+struct OrderId(u64);
+
+fn get_order(user: UserId, order: OrderId) -> Result<Order> {
+    // Can't accidentally swap user and order IDs
+    todo!()
+}
+
+// Bad: Easy to swap arguments
+fn get_order_bad(user_id: u64, order_id: u64) -> Result<Order> {
+    todo!()
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#7F848E;font-style:italic">// Good: Distinct types prevent mixing up arguments</span></span>
+<span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> UserId</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> OrderId</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> get_order</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">user</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">UserId</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">order</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">OrderId</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">Order</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Can't accidentally swap user and order IDs</span></span>
+<span class="line"><span style="color:#61AFEF">    todo!</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// Bad: Easy to swap arguments</span></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> get_order_bad</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">user_id</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">order_id</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">Result</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">Order</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#61AFEF">    todo!</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>建構子參數多時用 Builder 模式：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>rust-patterns 文件範例</span><button class="cb-copy" data-code="struct ServerConfig {
+    host: String,
+    port: u16,
+    max_connections: usize,
+}
+
+impl ServerConfig {
+    fn builder(host: impl Into<String>, port: u16) -> ServerConfigBuilder {
+        ServerConfigBuilder { host: host.into(), port, max_connections: 100 }
+    }
+}
+
+struct ServerConfigBuilder { host: String, port: u16, max_connections: usize }
+
+impl ServerConfigBuilder {
+    fn max_connections(mut self, n: usize) -> Self { self.max_connections = n; self }
+    fn build(self) -> ServerConfig {
+        ServerConfig { host: self.host, port: self.port, max_connections: self.max_connections }
+    }
+}
+
+// Usage: ServerConfig::builder(&quot;localhost&quot;, 8080).max_connections(200).build()" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> ServerConfig</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    host</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75">    port</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u16</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75">    max_connections</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">usize</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#E5C07B"> ServerConfig</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> builder</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">host</span><span style="color:#ABB2BF">: </span><span style="color:#C678DD">impl</span><span style="color:#E5C07B"> Into</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">>, </span><span style="color:#E06C75">port</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u16</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">ServerConfigBuilder</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">        ServerConfigBuilder</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">host</span><span style="color:#ABB2BF">: </span><span style="color:#E06C75">host</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">into</span><span style="color:#ABB2BF">(), </span><span style="color:#E06C75">port</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">max_connections</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">100</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> ServerConfigBuilder</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">host</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">port</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u16</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">max_connections</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">usize</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#E5C07B"> ServerConfigBuilder</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> max_connections</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">mut</span><span style="color:#E5C07B"> self</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">n</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">usize</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">Self</span><span style="color:#ABB2BF"> { </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.max_connections </span><span style="color:#56B6C2">=</span><span style="color:#E06C75"> n</span><span style="color:#ABB2BF">; </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> build</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">ServerConfig</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E5C07B">        ServerConfig</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">host</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.host, </span><span style="color:#E06C75">port</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.port, </span><span style="color:#E06C75">max_connections</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.max_connections }</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// Usage: ServerConfig::builder("localhost", 8080).max_connections(200).build()</span></span></code></pre></div></div><div class="call info"><span class="ci">ℹ️</span><div><strong>素材沒有的部分</strong><p>大綱預告的 type state、封裝 unsafe 的完整手法、Clippy 規則細節與 CI 整合，素材未提供對應說明。該文件對 unsafe 只給出原則：有 Safety 說明、FFI 邊界或有正確性依據的效能路徑可以用；用來繞過借用檢查器、圖方便、沒寫 Safety 註解、轉型不相關型別則不行。</p></div></div><h3>迭代器優先，其他速記</h3><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>rust-patterns 文件範例</span><button class="cb-copy" data-code="// Good: Declarative, lazy, composable
+let active_emails: Vec<String> = users.iter()
+    .filter(|u| u.is_active)
+    .map(|u| u.email.clone())
+    .collect();
+
+// Bad: Imperative accumulation
+let mut active_emails = Vec::new();
+for user in &amp;users {
+    if user.is_active {
+        active_emails.push(user.email.clone());
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#7F848E;font-style:italic">// Good: Declarative, lazy, composable</span></span>
+<span class="line"><span style="color:#C678DD">let</span><span style="color:#E06C75"> active_emails</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Vec</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">> </span><span style="color:#56B6C2">=</span><span style="color:#E06C75"> users</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">iter</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">    .</span><span style="color:#61AFEF">filter</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">|</span><span style="color:#E06C75">u</span><span style="color:#56B6C2">|</span><span style="color:#E06C75"> u</span><span style="color:#ABB2BF">.is_active)</span></span>
+<span class="line"><span style="color:#ABB2BF">    .</span><span style="color:#61AFEF">map</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">|</span><span style="color:#E06C75">u</span><span style="color:#56B6C2">|</span><span style="color:#E06C75"> u</span><span style="color:#ABB2BF">.email.</span><span style="color:#61AFEF">clone</span><span style="color:#ABB2BF">())</span></span>
+<span class="line"><span style="color:#ABB2BF">    .</span><span style="color:#61AFEF">collect</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// Bad: Imperative accumulation</span></span>
+<span class="line"><span style="color:#C678DD">let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> active_emails</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Vec</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#C678DD">for</span><span style="color:#E06C75"> user</span><span style="color:#C678DD"> in</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">users</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#E06C75"> user</span><span style="color:#ABB2BF">.is_active {</span></span>
+<span class="line"><span style="color:#E06C75">        active_emails</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">push</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">user</span><span style="color:#ABB2BF">.email.</span><span style="color:#61AFEF">clone</span><span style="color:#ABB2BF">());</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>文件的速查表還有：借用而非克隆、<code>?</code> 優於 <code>unwrap()</code>、對 Result 用 <code>#[must_use]</code>、用 <code>Cow</code> 避免不必要的分配、內部 API 用 <code>pub(crate)</code>。反模式則包含在 async 裡呼叫 <code>std::thread::sleep</code> 阻塞執行器（見第 13 章）。</p><figure class="svg-fig"><img src="/rust/img/ch15/01-framework-idioms-type-system.png" alt="六個慣用做法歸納為由型別系統把關的示意" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 15-2：六個慣用做法的共同點：讓型別系統替你把關</figcaption></figure><h2>專案結構與工具</h2><p>文件建議按「領域」而不是按「型別」組織模組，並把 <code>tests/</code>、<code>benches/</code> 放在專案根目錄：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>依素材改寫：rust-patterns 文件的專案結構（註解譯為繁中）</span><button class="cb-copy" data-code="my_app/
+├── src/
+│   ├── main.rs
+│   ├── lib.rs
+│   ├── auth/          # 領域模組
+│   │   ├── mod.rs
+│   │   ├── token.rs
+│   │   └── middleware.rs
+│   ├── orders/        # 領域模組
+│   │   ├── mod.rs
+│   │   ├── model.rs
+│   │   └── service.rs
+│   └── db/            # 基礎設施
+│       ├── mod.rs
+│       └── pool.rs
+├── tests/             # 整合測試
+├── benches/           # 基準測試
+└── Cargo.toml" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>my_app/</span></span>
+<span class="line"><span>├── src/</span></span>
+<span class="line"><span>│   ├── main.rs</span></span>
+<span class="line"><span>│   ├── lib.rs</span></span>
+<span class="line"><span>│   ├── auth/          # 領域模組</span></span>
+<span class="line"><span>│   │   ├── mod.rs</span></span>
+<span class="line"><span>│   │   ├── token.rs</span></span>
+<span class="line"><span>│   │   └── middleware.rs</span></span>
+<span class="line"><span>│   ├── orders/        # 領域模組</span></span>
+<span class="line"><span>│   │   ├── mod.rs</span></span>
+<span class="line"><span>│   │   ├── model.rs</span></span>
+<span class="line"><span>│   │   └── service.rs</span></span>
+<span class="line"><span>│   └── db/            # 基礎設施</span></span>
+<span class="line"><span>│       ├── mod.rs</span></span>
+<span class="line"><span>│       └── pool.rs</span></span>
+<span class="line"><span>├── tests/             # 整合測試</span></span>
+<span class="line"><span>├── benches/           # 基準測試</span></span>
+<span class="line"><span>└── Cargo.toml</span></span></code></pre></div></div><p>日常指令：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>rust-patterns 文件的基本指令</span><button class="cb-copy" data-code="cargo build
+cargo check              # Fast type checking without codegen
+cargo clippy             # Lints and suggestions
+cargo fmt                # Format code
+
+cargo test
+cargo test -- --nocapture    # Show println output
+cargo test --lib             # Unit tests only
+cargo test --test integration # Integration tests only" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">cargo</span><span style="color:#98C379"> build</span></span>
+<span class="line"><span style="color:#61AFEF">cargo</span><span style="color:#98C379"> check</span><span style="color:#7F848E;font-style:italic">              # Fast type checking without codegen</span></span>
+<span class="line"><span style="color:#61AFEF">cargo</span><span style="color:#98C379"> clippy</span><span style="color:#7F848E;font-style:italic">             # Lints and suggestions</span></span>
+<span class="line"><span style="color:#61AFEF">cargo</span><span style="color:#98C379"> fmt</span><span style="color:#7F848E;font-style:italic">                # Format code</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">cargo</span><span style="color:#98C379"> test</span></span>
+<span class="line"><span style="color:#61AFEF">cargo</span><span style="color:#98C379"> test</span><span style="color:#D19A66"> --</span><span style="color:#D19A66"> --nocapture</span><span style="color:#7F848E;font-style:italic">    # Show println output</span></span>
+<span class="line"><span style="color:#61AFEF">cargo</span><span style="color:#98C379"> test</span><span style="color:#D19A66"> --lib</span><span style="color:#7F848E;font-style:italic">             # Unit tests only</span></span>
+<span class="line"><span style="color:#61AFEF">cargo</span><span style="color:#98C379"> test</span><span style="color:#D19A66"> --test</span><span style="color:#98C379"> integration</span><span style="color:#7F848E;font-style:italic"> # Integration tests only</span></span></code></pre></div></div><h2>測試</h2><p>依官方 Rust Book，測試是用 <code>#[test]</code> 標註的函式，本體通常做三件事：準備資料、執行要測的程式、斷言結果。用 Cargo 建立函式庫專案時會自動產生測試模組：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>官方 Rust Book Listing 11-1（cargo new adder --lib 產生）</span><button class="cb-copy" data-code="pub fn add(left: u64, right: u64) -> u64 {
+    left + right
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let result = add(2, 2);
+        assert_eq!(result, 4);
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> add</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">left</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">right</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">u64</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    left</span><span style="color:#ABB2BF"> + </span><span style="color:#E06C75">right</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[cfg(test)]</span></span>
+<span class="line"><span style="color:#C678DD">mod</span><span style="color:#ABB2BF"> tests {</span></span>
+<span class="line"><span style="color:#C678DD">    use</span><span style="color:#E5C07B;font-style:italic"> super</span><span style="color:#ABB2BF">::*;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    #[test]</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> it_works</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> add</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">        assert_eq!</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">result</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">4</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>執行 <code>cargo test</code> 的輸出（官方書 Listing 11-2）：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>官方 Rust Book Listing 11-2</span><button class="cb-copy" data-code="$ cargo test
+   Compiling adder v0.1.0 (file:///projects/adder)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.57s
+     Running unittests src/lib.rs (target/debug/deps/adder-01ad14159ff659ab)
+
+running 1 test
+test tests::it_works ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests adder
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>$ cargo test</span></span>
+<span class="line"><span>   Compiling adder v0.1.0 (file:///projects/adder)</span></span>
+<span class="line"><span>    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.57s</span></span>
+<span class="line"><span>     Running unittests src/lib.rs (target/debug/deps/adder-01ad14159ff659ab)</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>running 1 test</span></span>
+<span class="line"><span>test tests::it_works ... ok</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>   Doc-tests adder</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>running 0 tests</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s</span></span></code></pre></div></div><p>官方書說明：測試失敗的條件是測試函式 panic，每個測試在新執行緒中執行，主執行緒看到測試執行緒死亡就標記失敗。<code>assert!</code> 檢查條件是否為 <code>true</code>，<code>assert_eq!</code> 檢查相等。輸出中的 <code>Doc-tests</code> 區段則是文件測試的結果。</p><h2>文件與發佈到 crates.io</h2><p>文件註解用三個斜線 <code>///</code>，支援 Markdown；<code>cargo doc --open</code> 會產生 HTML 文件。註解裡的程式碼區塊也會在 <code>cargo test</code> 時當成測試執行，讓文件與程式碼保持同步。<code>//!</code> 則是替「包含它的項目」（例如整個 crate）寫文件。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>官方 Rust Book Listing 14-1（文件註解與文件測試）</span><button class="cb-copy" data-code="/// Adds one to the number given.
+///
+/// # Examples
+///
+/// ```
+/// let arg = 5;
+/// let answer = my_crate::add_one(arg);
+///
+/// assert_eq!(6, answer);
+/// ```" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#7F848E;font-style:italic">/// Adds one to the number given.</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">///</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// # Examples</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">///</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// ```</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// let arg = 5;</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// let answer = my_crate::add_one(arg);</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">///</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// assert_eq!(6, answer);</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// ```</span></span></code></pre></div></div><p>發佈流程（官方書）：先用 GitHub 帳號登入 crates.io 取得 API token，再執行 <code>cargo login</code>，token 會存到 <code>~/.cargo/credentials.toml</code>，這是機密，不可分享。crate 名稱先搶先贏。<code>Cargo.toml</code> 至少要有 <code>description</code> 與 <code>license</code>，否則 <code>cargo publish</code> 會報 400 錯誤。許多 Rust 社群專案採用 <code>MIT OR Apache-2.0</code> 雙授權。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>可發佈的 Cargo.toml（官方 Rust Book）</span><button class="cb-copy" data-code="[package]
+name = &quot;guessing_game&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2024&quot;
+description = &quot;A fun game where you guess what number the computer has chosen.&quot;
+license = &quot;MIT OR Apache-2.0&quot;
+
+[dependencies]" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="toml"><code><span class="line"><span style="color:#ABB2BF">[</span><span style="color:#61AFEF">package</span><span style="color:#ABB2BF">]</span></span>
+<span class="line"><span style="color:#E06C75">name</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"guessing_game"</span></span>
+<span class="line"><span style="color:#E06C75">version</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"0.1.0"</span></span>
+<span class="line"><span style="color:#E06C75">edition</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"2024"</span></span>
+<span class="line"><span style="color:#E06C75">description</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"A fun game where you guess what number the computer has chosen."</span></span>
+<span class="line"><span style="color:#E06C75">license</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"MIT OR Apache-2.0"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">[</span><span style="color:#61AFEF">dependencies</span><span style="color:#ABB2BF">]</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>發佈與撤回指令（官方 Rust Book 摘錄）</span><button class="cb-copy" data-code="$ cargo login
+$ cargo publish
+$ cargo yank --vers 1.0.1
+$ cargo yank --vers 1.0.1 --undo" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> login</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> publish</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> yank</span><span style="color:#D19A66"> --vers</span><span style="color:#D19A66"> 1.0.1</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> yank</span><span style="color:#D19A66"> --vers</span><span style="color:#D19A66"> 1.0.1</span><span style="color:#D19A66"> --undo</span></span></code></pre></div></div><div class="call warn"><span class="ci">⚠️</span><div><strong>發佈是永久的</strong><p>官方書強調：同一版本不能被覆寫，程式碼除非特殊情況也不能刪除，因為 crates.io 要當成永久的程式碼檔案庫，確保依賴它的專案持續可建置。有問題的版本可以用 <code>cargo yank</code> 阻止新專案依賴，已有 <code>Cargo.lock</code> 的專案不受影響；加上 <code>--undo</code> 可還原。</p></div></div><figure class="svg-fig"><svg width="100%" height="auto" viewBox="0 0 800 250" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arr-c15" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--accent)" /></marker></defs><g font-family="system-ui, sans-serif"><rect x="25" y="25" width="130" height="84" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="90.0" y="51" text-anchor="middle" font-size="16px" font-weight="700" fill="var(--text)">cargo test</text><text x="90.0" y="73" text-anchor="middle" font-size="14px" fill="var(--muted)">含 Doc-tests</text><rect x="180" y="25" width="130" height="84" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="245.0" y="51" text-anchor="middle" font-size="16px" font-weight="700" fill="var(--text)">cargo doc</text><text x="245.0" y="73" text-anchor="middle" font-size="14px" fill="var(--muted)">產生 HTML 文件</text><rect x="335" y="25" width="130" height="84" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="400.0" y="51" text-anchor="middle" font-size="16px" font-weight="700" fill="var(--text)">cargo login</text><text x="400.0" y="73" text-anchor="middle" font-size="14px" fill="var(--muted)">API token 是機密</text><rect x="490" y="25" width="130" height="84" rx="8" fill="var(--bg2)" stroke="var(--accent)" stroke-width="2"/><text x="555.0" y="51" text-anchor="middle" font-size="16px" font-weight="700" fill="var(--text)">cargo publish</text><text x="555.0" y="73" text-anchor="middle" font-size="14px" fill="var(--muted)">description</text><text x="555.0" y="92" text-anchor="middle" font-size="14px" fill="var(--muted)">與 license 必填</text><rect x="645" y="25" width="130" height="84" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="710.0" y="51" text-anchor="middle" font-size="16px" font-weight="700" fill="var(--text)">crates.io</text><text x="710.0" y="73" text-anchor="middle" font-size="14px" fill="var(--muted)">版本不可覆寫</text><path d="M 155,67 L 172,67" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c15)"/><path d="M 310,67 L 327,67" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c15)"/><path d="M 465,67 L 482,67" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c15)"/><path d="M 620,67 L 637,67" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c15)"/><rect x="25" y="150" width="285" height="70" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="5"/><text x="167.5" y="176" text-anchor="middle" font-size="16px" font-weight="700" fill="var(--text)">文件註解 ///</text><text x="167.5" y="198" text-anchor="middle" font-size="14px" fill="var(--muted)">程式碼區塊也會在</text><text x="167.5" y="217" text-anchor="middle" font-size="14px" fill="var(--muted)">cargo test 時執行</text><path d="M 167,150 L 167,117" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4" marker-end="url(#arr-c15)"/><rect x="490" y="150" width="285" height="70" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="5"/><text x="632.5" y="176" text-anchor="middle" font-size="16px" font-weight="700" fill="var(--text)">cargo yank</text><text x="632.5" y="198" text-anchor="middle" font-size="14px" fill="var(--muted)">阻止新專案依賴</text><text x="632.5" y="217" text-anchor="middle" font-size="14px" fill="var(--muted)">--undo 可還原</text><path d="M 710,117 L 710,142" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4" marker-end="url(#arr-c15)"/></g></svg><figcaption>圖 15-3：從 cargo test 到發佈到 crates.io 的流程，yank 只阻止新專案依賴</figcaption></figure><h2>小型專案：命令列工具</h2><p>官方 Rust Book 第 12 章拿「簡易版 grep」整合前面的概念：程式碼組織、向量與字串、錯誤處理、trait 與生命週期、測試。它也示範讀取環境變數來設定行為，並把錯誤訊息輸出到 <code>stderr</code> 而非 <code>stdout</code>，讓使用者可以把成功輸出導向檔案、同時仍在畫面看到錯誤。官方也提到社群成員 Andrew Gallant 寫的完整高速版本 <code>ripgrep</code>。本章素材只有該章的開場說明，沒有逐步實作的程式碼，所以這裡不編造完整實作，建議直接讀官方書第 12 章。</p><h2>小結與下一章</h2><p>慣用法的核心是讓型別系統幫你把關：窮盡匹配、newtype、以 <code>?</code> 傳遞錯誤，再配合 <code>cargo test</code>、文件測試與 <code>cargo clippy</code>／<code>cargo fmt</code>。下一章把視野拉到系統層：Rust 進入 Linux 核心、嵌入式裝置，以及 Cloudflare 的 Pingora。</p></div><nav class="cnav" data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" class="prev" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>← 上一章</span><span class="nt" data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a><a href="/rust/ch16-systems-linux-embedded" class="next" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>下一章 →</span><span class="nt" data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></nav></main></div><script>
+    // Theme
+    const html = document.documentElement;
+    const tt = document.getElementById('tt');
+    const isun = document.getElementById('isun');
+    const imoon = document.getElementById('imoon');
+    function syncIcons() {
+      const dk = html.classList.contains('dark');
+      isun.style.display = dk ? 'block' : 'none';
+      imoon.style.display = dk ? 'none' : 'block';
+    }
+    syncIcons();
+    tt?.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('cc-theme', html.classList.contains('dark') ? 'dark' : 'light');
+      syncIcons();
+    });
+
+    // Progress
+    const pb = document.getElementById('pb');
+    window.addEventListener('scroll', () => {
+      const t = document.documentElement.scrollHeight - window.innerHeight;
+      pb.style.width = t > 0 ? `${(window.scrollY / t) * 100}%` : '0%';
+    }, { passive: true });
+
+    // Sidebar part toggles
+    document.querySelectorAll('.pt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pid;
+        const list = document.querySelector(`[data-pl="${id}"]`);
+        btn.classList.toggle('open');
+        list?.classList.toggle('closed');
+      });
+    });
+
+    // Mobile menu
+    const sb = document.getElementById('sb');
+    const ov = document.getElementById('ov');
+    const mb = document.getElementById('mbtn');
+    const open = () => { sb.classList.add('open'); ov.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close = () => { sb.classList.remove('open'); ov.classList.remove('open'); document.body.style.overflow=''; };
+    mb?.addEventListener('click', open);
+    ov?.addEventListener('click', close);
+  </script></body></html>

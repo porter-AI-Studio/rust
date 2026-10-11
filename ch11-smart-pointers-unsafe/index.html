@@ -1,0 +1,352 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-ccykbmgk><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>智慧指標與 unsafe | Rust 實戰指南</title><meta name="description" content="Box<T> 堆積配置與遞迴型別、Rc<T> 參考計數與共享所有權、unsafe Rust 的五種超能力、raw pointer、安全抽象與 FFI、Miri 與 Rustonomicon。"><link rel="icon" href="/rust/favicon.svg" type="image/svg+xml"><script>
+    (function () {
+      const s = localStorage.getItem('cc-theme');
+      const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark');
+    })();
+  </script><link rel="stylesheet" href="/rust/_astro/DocsLayout.9CQhNdRI.css"><style>.cb-wrap[data-astro-cid-c6nuo4je]{margin-bottom:1.25rem}.cb-bar[data-astro-cid-c6nuo4je]{background:#1a1a2e;border:1px solid #ffffff14;border-bottom-color:#ffffff0d;border-radius:6px 6px 0 0;justify-content:space-between;align-items:center;min-height:1.8rem;padding:.18rem .5rem .18rem .75rem;display:flex}.cb-label[data-astro-cid-c6nuo4je]{color:#a6adc8;letter-spacing:.04em;font-family:Fira Code,Cascadia Code,Consolas,monospace;font-size:.73rem}.cb-inner[data-astro-cid-c6nuo4je] pre{border-radius:0 0 8px 8px!important;margin-bottom:0!important}.cb-copy[data-astro-cid-c6nuo4je]{color:#888;cursor:pointer;background:#ffffff14;border:1px solid #ffffff1f;border-radius:4px;flex-shrink:0;padding:.15rem .55rem;font-size:.7rem;transition:all .15s}.cb-copy[data-astro-cid-c6nuo4je]:hover{color:#fff;background:#ffffff2e}.cb-copy[data-astro-cid-c6nuo4je].copied{color:#4ec9b0;border-color:#4ec9b0}
+</style></head><body data-astro-cid-ccykbmgk><div id="pb" data-astro-cid-ccykbmgk></div><header data-astro-cid-ccykbmgk><div class="hi" data-astro-cid-ccykbmgk><div class="hl" data-astro-cid-ccykbmgk><button id="mbtn" class="ibtn" aria-label="選單" data-astro-cid-ccykbmgk><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" data-astro-cid-ccykbmgk></path></svg></button><a href="/rust/" class="site-name" data-astro-cid-ccykbmgk><span class="logo" data-astro-cid-ccykbmgk>RS</span>&nbsp;&nbsp;Rust 實戰指南</a></div><div class="hr" data-astro-cid-ccykbmgk><button id="tt" class="ibtn" aria-label="切換主題" data-astro-cid-ccykbmgk><svg id="isun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" data-astro-cid-ccykbmgk></path></svg><svg id="imoon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" data-astro-cid-ccykbmgk></path></svg></button></div></div></header><div id="layout" data-astro-cid-ccykbmgk><nav id="sb" data-astro-cid-ccykbmgk><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="0" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 0：前言</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="0" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/preface" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>0.</span><span data-astro-cid-ccykbmgk>前言</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="1" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 1：認識 Rust</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="1" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>1.</span><span data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch02-setup-cargo" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>2.</span><span data-astro-cid-ccykbmgk>安裝與 Cargo：第一個專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>3.</span><span data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>4.</span><span data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="2" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 2：所有權：Rust 的核心</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="2" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>5.</span><span data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>6.</span><span data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch07-lifetimes" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>7.</span><span data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>8.</span><span data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="3" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 3：型別系統與錯誤處理</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="3" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>9.</span><span data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>10.</span><span data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" class="active" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>11.</span><span data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="4" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 4：並行與非同步</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="4" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch12-concurrency" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>12.</span><span data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>13.</span><span data-astro-cid-ccykbmgk>async/await 基礎</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>14.</span><span data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="5" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 5：工程實務與生態</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="5" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch15-idioms-and-project" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>15.</span><span data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch16-systems-linux-embedded" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>16.</span><span data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch17-reality-check" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>17.</span><span data-astro-cid-ccykbmgk>現實檢查：批評、代價與重寫案例</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="6" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 6：附錄</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="6" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/glossary" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>18.</span><span data-astro-cid-ccykbmgk>名詞解釋</span></a></li></ul></div></nav><div id="ov" data-astro-cid-ccykbmgk></div><main data-astro-cid-ccykbmgk><div class="cb" data-astro-cid-ccykbmgk><span class="clabel">第 11 章 · Part 3：型別系統與錯誤處理</span><h1>智慧指標與 unsafe</h1><p class="cdesc">需要把資料放上堆積、讓多個擁有者共享一份資料，或做編譯器無法驗證的底層操作時，Rust 提供什麼工具。</p><p>前面幾章談的所有權規則，預設是「每個值都有一個擁有者」；至於資料放在堆疊或堆積，則是另一個問題，前面的章節已經看過 String 這類值的內容放在堆積。現實裡常會遇到例外：資料大小在編譯期不確定、需要多個擁有者共享一份資料，或是要和 C 程式、硬體打交道。本章先看兩個最常用的智慧指標 <code>Box&lt;T&gt;</code> 與 <code>Rc&lt;T&gt;</code>，再看 Rust 如何用 <code>unsafe</code> 這個明確標示出來的逃生口處理底層需求。範例取自 Rust 官方文件 The Rust Programming Language（以下簡稱 Rust Book）與 The Rustonomicon。</p><h2>Box&lt;T&gt;：把資料放到堆積上</h2><p>Box 是最直接的智慧指標，型別寫成 <code>Box&lt;T&gt;</code>。資料存在堆積上，堆疊上留下的只有指向堆積資料的指標。Rust Book 說明 Box 除了「資料放在堆積而非堆疊」之外，沒有額外的執行期成本，也沒有太多額外功能。常見用途有三種：</p><ul><li>型別大小在編譯期無法得知，卻要在需要確定大小的地方使用它（例如遞迴型別）。</li><li>有大量資料，想轉移所有權但避免資料被複製。</li><li>只關心某個值實作了特定 trait，而不在乎具體型別。</li></ul><p>最基本的用法如下，印出 <code>b = 5</code>。官方也說明，單獨把一個 <code>i32</code> 放上堆積並不實用，這類值放在堆疊上更合適：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 15-1：Box 的基本用法</span><button class="cb-copy" data-code="fn main() {
+    let b = Box::new(5);
+    println!(&quot;b = {b}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> b</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Box</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">5</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"b = {b}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><script type="module">document.querySelectorAll(`.cb-copy`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.code;t&&navigator.clipboard.writeText(t).then(()=>{e.textContent=`已複製!`,e.classList.add(`copied`),setTimeout(()=>{e.textContent=`複製`,e.classList.remove(`copied`)},2e3)})})});</script><h3>用 Box 讓遞迴型別有確定大小</h3><p>遞迴型別的值可以包含另一個同型別的值，但 Rust 必須在編譯期知道每個型別佔多少空間。官方用 cons list（源自 Lisp 的巢狀配對資料結構，如 <code>(1, (2, (3, Nil)))</code>）示範。Rust Book 也提醒：cons list 在 Rust 中不常用，大多數時候清單用 <code>Vec&lt;T&gt;</code> 就好。直接定義的版本無法編譯：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 15-2／15-3：直接遞迴（無法編譯）</span><button class="cb-copy" data-code="enum List {
+    Cons(i32, List),
+    Nil,
+}
+
+use crate::List::{Cons, Nil};
+
+fn main() {
+    let list = Cons(1, Cons(2, Cons(3, Nil)));
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">enum</span><span style="color:#E5C07B"> List</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">    Cons</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">List</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">    Nil</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#C678DD"> crate</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">List</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">Cons</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Nil</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> list</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> Cons</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">, </span><span style="color:#61AFEF">Cons</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#61AFEF">Cons</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Nil</span><span style="color:#ABB2BF">)));</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 15-4：編譯器回報型別大小無限</span><button class="cb-copy" data-code="error[E0072]: recursive type `List` has infinite size
+ --> src/main.rs:1:1
+  |
+1 | enum List {
+  | ^^^^^^^^^
+2 |     Cons(i32, List),
+  |               ---- recursive without indirection
+  |
+help: insert some indirection (e.g., a `Box`, `Rc`, or `&amp;`) to break the cycle
+  |
+2 |     Cons(i32, Box<List>),
+  |               ++++    +" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>error[E0072]: recursive type `List` has infinite size</span></span>
+<span class="line"><span> --> src/main.rs:1:1</span></span>
+<span class="line"><span>  |</span></span>
+<span class="line"><span>1 | enum List {</span></span>
+<span class="line"><span>  | ^^^^^^^^^</span></span>
+<span class="line"><span>2 |     Cons(i32, List),</span></span>
+<span class="line"><span>  |               ---- recursive without indirection</span></span>
+<span class="line"><span>  |</span></span>
+<span class="line"><span>help: insert some indirection (e.g., a `Box`, `Rc`, or `&#x26;`) to break the cycle</span></span>
+<span class="line"><span>  |</span></span>
+<span class="line"><span>2 |     Cons(i32, Box&#x3C;List>),</span></span>
+<span class="line"><span>  |               ++++    +</span></span></code></pre></div></div><p>編譯器的建議是插入間接層（indirection），例如 <code>Box</code>。指標的大小不會隨它指向的資料而改變，所以 <code>Box&lt;List&gt;</code> 的大小是固定的，<code>List</code> 的大小也就能算出來：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 15-5：用 Box 打斷無限遞迴</span><button class="cb-copy" data-code="enum List {
+    Cons(i32, Box<List>),
+    Nil,
+}
+
+use crate::List::{Cons, Nil};
+
+fn main() {
+    let list = Cons(1, Box::new(Cons(2, Box::new(Cons(3, Box::new(Nil))))));
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">enum</span><span style="color:#E5C07B"> List</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">    Cons</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Box</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">List</span><span style="color:#ABB2BF">>),</span></span>
+<span class="line"><span style="color:#E5C07B">    Nil</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#C678DD"> crate</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">List</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">Cons</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Nil</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> list</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> Cons</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Box</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">Cons</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Box</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">Cons</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Box</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">Nil</span><span style="color:#ABB2BF">))))));</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>Rust Book 說明 <code>Box&lt;T&gt;</code> 之所以是智慧指標，是因為它實作了 <code>Deref</code> trait，所以可以像參考一樣使用；離開作用域時，Box 指向的堆積資料也會一併被釋放。（本章素材未展開 <code>Deref</code> 與 <code>Drop</code> 的細節。）</p><figure class="svg-fig"><img src="/rust/img/ch11/01-flowchart-box-breaks-infinite-size.png" alt="遞迴型別因大小無限而編譯失敗，加上 Box 後修正的流程" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 11-1：遞迴型別為何需要 Box：從編譯錯誤到改用 Box 讓大小確定</figcaption></figure><h2>Rc&lt;T&gt;：多個擁有者共享資料</h2><p>多數情況下誰擁有某個值是很清楚的，但有些情況一個值確實需要多個擁有者。Rust Book 舉的例子是圖資料結構：多條邊可能指向同一個節點，只有在沒有任何邊指向它時才能清除。要啟用多重所有權，必須明確使用 <code>Rc&lt;T&gt;</code>（reference counting，參考計數）。它記錄參考數量，數量歸零時資料才被清理。官方用客廳的電視比喻：第一個人進來打開電視，最後一個人離開時關掉。</p><p>回到 cons list：想讓清單 <code>b</code> 與 <code>c</code> 共用清單 <code>a</code> 作為尾巴，用 <code>Box</code> 行不通，因為第一次建立 <code>b</code> 時 <code>a</code> 就被移動進去了：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 15-17 的編譯錯誤（節錄）</span><button class="cb-copy" data-code="error[E0382]: use of moved value: `a`
+  --> src/main.rs:11:30
+   |
+ 9 |     let a = Cons(5, Box::new(Cons(10, Box::new(Nil))));
+   |         - move occurs because `a` has type `List`, which does not implement the `Copy` trait
+10 |     let b = Cons(3, Box::new(a));
+   |                              - value moved here
+11 |     let c = Cons(4, Box::new(a));
+   |                              ^ value used here after move" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>error[E0382]: use of moved value: `a`</span></span>
+<span class="line"><span>  --> src/main.rs:11:30</span></span>
+<span class="line"><span>   |</span></span>
+<span class="line"><span> 9 |     let a = Cons(5, Box::new(Cons(10, Box::new(Nil))));</span></span>
+<span class="line"><span>   |         - move occurs because `a` has type `List`, which does not implement the `Copy` trait</span></span>
+<span class="line"><span>10 |     let b = Cons(3, Box::new(a));</span></span>
+<span class="line"><span>   |                              - value moved here</span></span>
+<span class="line"><span>11 |     let c = Cons(4, Box::new(a));</span></span>
+<span class="line"><span>   |                              ^ value used here after move</span></span></code></pre></div></div><p>改用 <code>Rc&lt;T&gt;</code>，並以 <code>Rc::clone(&amp;a)</code> 取得共享參考。Rust Book 說明 <code>Rc::clone</code> 不會像多數型別的 <code>clone</code> 那樣深層複製資料，只是增加參考計數；慣例上這裡寫 <code>Rc::clone(&amp;a)</code> 而不是 <code>a.clone()</code>。下面用 <code>Rc::strong_count</code> 觀察計數變化：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 15-19：觀察 Rc 的參考計數</span><button class="cb-copy" data-code="enum List {
+    Cons(i32, Rc<List>),
+    Nil,
+}
+
+use crate::List::{Cons, Nil};
+use std::rc::Rc;
+
+fn main() {
+    let a = Rc::new(Cons(5, Rc::new(Cons(10, Rc::new(Nil)))));
+    println!(&quot;count after creating a = {}&quot;, Rc::strong_count(&amp;a));
+    let b = Cons(3, Rc::clone(&amp;a));
+    println!(&quot;count after creating b = {}&quot;, Rc::strong_count(&amp;a));
+    {
+        let c = Cons(4, Rc::clone(&amp;a));
+        println!(&quot;count after creating c = {}&quot;, Rc::strong_count(&amp;a));
+    }
+    println!(&quot;count after c goes out of scope = {}&quot;, Rc::strong_count(&amp;a));
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">enum</span><span style="color:#E5C07B"> List</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">    Cons</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Rc</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">List</span><span style="color:#ABB2BF">>),</span></span>
+<span class="line"><span style="color:#E5C07B">    Nil</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#C678DD"> crate</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">List</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">Cons</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Nil</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">rc</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Rc</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> a</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Rc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">Cons</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">5</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Rc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">Cons</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">10</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Rc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">Nil</span><span style="color:#ABB2BF">)))));</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"count after creating a = {}"</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Rc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">strong_count</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">a</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> b</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> Cons</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Rc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">clone</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">a</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"count after creating b = {}"</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Rc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">strong_count</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">a</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#ABB2BF">    {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> c</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> Cons</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">4</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Rc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">clone</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">a</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"count after creating c = {}"</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Rc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">strong_count</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">a</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"count after c goes out of scope = {}"</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Rc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">strong_count</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">a</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：輸出</span><button class="cb-copy" data-code="count after creating a = 1
+count after creating b = 2
+count after creating c = 3
+count after c goes out of scope = 2" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>count after creating a = 1</span></span>
+<span class="line"><span>count after creating b = 2</span></span>
+<span class="line"><span>count after creating c = 3</span></span>
+<span class="line"><span>count after c goes out of scope = 2</span></span></code></pre></div></div><p>計數在建立 <code>b</code>、<code>c</code> 時增加，<code>c</code> 離開作用域時自動減少，不必手動呼叫函式。</p><figure class="svg-fig"><svg width="100%" height="auto" viewBox="0 0 800 370" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Box 與 Rc 的所有權模型對照">
+<defs>
+<marker id="arr-c11" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--accent)" /></marker>
+</defs>
+<g font-family="system-ui, sans-serif">
+<rect x="20" y="15" width="360" height="340" rx="10" fill="transparent" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="5" />
+<text x="200" y="47" text-anchor="middle" font-size="18px" font-weight="700" fill="var(--text)">Box&lt;T&gt;：單一擁有者</text>
+<text x="100" y="88" text-anchor="middle" font-size="15px" fill="var(--muted)">堆疊</text>
+<text x="295" y="88" text-anchor="middle" font-size="15px" fill="var(--muted)">堆積</text>
+<rect x="50" y="105" width="100" height="50" rx="6" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="100" y="136" text-anchor="middle" font-size="17px" fill="var(--text)">b</text>
+<rect x="240" y="105" width="110" height="50" rx="6" fill="var(--bg2)" stroke="var(--accent)" stroke-width="2" />
+<text x="295" y="136" text-anchor="middle" font-size="17px" fill="var(--text)">5</text>
+<path d="M 150 130 L 232 130" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arr-c11)" />
+<text x="200" y="205" text-anchor="middle" font-size="15px" fill="var(--text)">資料放在堆積</text>
+<text x="200" y="232" text-anchor="middle" font-size="15px" fill="var(--text)">堆疊上只留指標，大小固定</text>
+<text x="200" y="259" text-anchor="middle" font-size="15px" fill="var(--text)">離開作用域時一併釋放</text>
+<rect x="420" y="15" width="360" height="340" rx="10" fill="transparent" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="5" />
+<text x="600" y="47" text-anchor="middle" font-size="18px" font-weight="700" fill="var(--text)">Rc&lt;T&gt;：多個擁有者</text>
+<text x="470" y="88" text-anchor="middle" font-size="15px" fill="var(--muted)">堆疊</text>
+<text x="715" y="88" text-anchor="middle" font-size="15px" fill="var(--muted)">堆積</text>
+<rect x="440" y="100" width="70" height="40" rx="6" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="475" y="126" text-anchor="middle" font-size="17px" fill="var(--text)">a</text>
+<rect x="440" y="155" width="70" height="40" rx="6" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="475" y="181" text-anchor="middle" font-size="17px" fill="var(--text)">b</text>
+<rect x="440" y="210" width="70" height="40" rx="6" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="475" y="236" text-anchor="middle" font-size="17px" fill="var(--text)">c</text>
+<rect x="640" y="140" width="120" height="60" rx="6" fill="var(--bg2)" stroke="var(--accent)" stroke-width="2" />
+<text x="700" y="176" text-anchor="middle" font-size="17px" fill="var(--text)">List</text>
+<path d="M 510 120 L 580 120 L 580 160 L 632 160" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arr-c11)" />
+<path d="M 510 175 L 632 175" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arr-c11)" />
+<path d="M 510 230 L 580 230 L 580 190 L 632 190" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arr-c11)" />
+<text x="700" y="228" text-anchor="middle" font-size="16px" font-weight="700" fill="var(--accent)">strong_count = 3</text>
+<text x="600" y="288" text-anchor="middle" font-size="15px" fill="var(--text)">Rc::clone 只增加計數，不深層複製</text>
+<text x="600" y="314" text-anchor="middle" font-size="15px" fill="var(--text)">計數歸零時資料才被清理</text>
+<text x="600" y="340" text-anchor="middle" font-size="15px" fill="var(--text)">只限單執行緒，唯讀共享</text>
+</g>
+</svg><figcaption>圖 11-2：Box 與 Rc 的所有權模型對照（以官方 cons list 範例的計數 3 為例）</figcaption></figure><div class="call warn"><span class="ci">⚠️</span><div><strong>Rc 的限制</strong><p>Rust Book 指出：<code>Rc&lt;T&gt;</code> 只能用在單執行緒情境；跨執行緒的參考計數要用其他型別，下一章會談到。此外，<code>Rc&lt;T&gt;</code> 透過不可變參考提供唯讀共享；若允許多個可變參考，會違反借用規則。需要修改共享資料的做法，不在本章素材範圍內。</p></div></div><h2>unsafe Rust：離開編譯器保護的明確邊界</h2><p>Rust Book 說 Rust 內藏第二種語言：unsafe Rust，它不強制檢查記憶體安全。存在的原因有兩個：靜態分析本質上是保守的，寧可拒絕一些其實合法的程式，也不要放行不合法的程式；而且底層硬體本身就是不安全的，若不允許不安全的操作，就無法做系統程式設計（如直接與作業系統互動，甚至寫作業系統）。</p><p>用 <code>unsafe</code> 區塊可以做五件「超能力」操作：</p><ol><li>解參考（dereference）raw pointer。</li><li>呼叫 unsafe 函式或方法。</li><li>存取或修改可變的 static 變數。</li><li>實作 unsafe trait。</li><li>存取 <code>union</code> 的欄位。</li></ol><p>重點是：<code>unsafe</code> 並不會關閉借用檢查器或其他安全檢查，它只是讓你可以做上面五件事；也不代表區塊內的程式碼一定危險，而是由你這位程式設計師向編譯器保證它不會出記憶體問題。好處是，與記憶體安全相關的錯誤只可能出現在 <code>unsafe</code> 區塊內，所以要盡量縮小區塊，並用安全的 API 把它包起來。</p><figure class="svg-fig"><img src="/rust/img/ch11/02-framework-unsafe-five-superpowers.png" alt="unsafe 允許的五種操作，且不關閉借用檢查器" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 11-3：unsafe 的五種超能力操作；它並不會關閉借用檢查器</figcaption></figure><h3>Raw pointer</h3><p>raw pointer 有 <code>*const T</code> 與 <code>*mut T</code> 兩種。和參考與智慧指標不同，它可以同時有可變與不可變指標、不保證指向有效記憶體、可以是 null、也不會自動清理。<strong>建立</strong> raw pointer 不需要 <code>unsafe</code>，只有<strong>解參考</strong>才需要：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 20-1／20-3：建立並解參考 raw pointer</span><button class="cb-copy" data-code="fn main() {
+    let mut num = 5;
+
+    let r1 = &amp;raw const num;
+    let r2 = &amp;raw mut num;
+
+    unsafe {
+        println!(&quot;r1 is: {}&quot;, *r1);
+        println!(&quot;r2 is: {}&quot;, *r2);
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> num</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 5</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r1</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">raw</span><span style="color:#C678DD"> const</span><span style="color:#E06C75"> num</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r2</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">raw</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> num</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    unsafe</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"r1 is: {}"</span><span style="color:#ABB2BF">, *</span><span style="color:#E06C75">r1</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"r2 is: {}"</span><span style="color:#ABB2BF">, *</span><span style="color:#E06C75">r2</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>官方指出 raw pointer 的主要用途是與 C 程式介接，或建構借用檢查器無法理解的安全抽象。</p><h3>unsafe 函式與安全抽象</h3><p>unsafe 函式在定義前多一個 <code>unsafe</code>，呼叫時必須放進 <code>unsafe</code> 區塊，表示你已讀過它的文件並確認遵守了它的契約。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 20-4：unsafe 函式</span><button class="cb-copy" data-code="fn main() {
+    unsafe fn dangerous() {}
+
+    unsafe {
+        dangerous();
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    unsafe</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> dangerous</span><span style="color:#ABB2BF">() {}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    unsafe</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        dangerous</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>函式內含 unsafe 程式碼，並不代表整個函式要標成 unsafe。常見做法是把它包成安全函式。官方以標準函式庫的 <code>split_at_mut</code> 為例：它把一個可變切片分成兩段，但只用安全 Rust 寫會被借用檢查器擋下，因為編譯器看不出兩次借用的是切片中不重疊的部分：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 20-5 的編譯錯誤（節錄）</span><button class="cb-copy" data-code="error[E0499]: cannot borrow `*values` as mutable more than once at a time
+ --> src/main.rs:6:31
+  |
+1 | fn split_at_mut(values: &amp;mut [i32], mid: usize) -> (&amp;mut [i32], &amp;mut [i32]) {
+  |                         - let's call the lifetime of this reference `'1`
+...
+6 |     (&amp;mut values[..mid], &amp;mut values[mid..])
+  |     --------------------------^^^^^^--------
+  |     |     |                   |
+  |     |     |                   second mutable borrow occurs here
+  |     |     first mutable borrow occurs here
+  |     returning this value requires that `*values` is borrowed for `'1`" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>error[E0499]: cannot borrow `*values` as mutable more than once at a time</span></span>
+<span class="line"><span> --> src/main.rs:6:31</span></span>
+<span class="line"><span>  |</span></span>
+<span class="line"><span>1 | fn split_at_mut(values: &#x26;mut [i32], mid: usize) -> (&#x26;mut [i32], &#x26;mut [i32]) {</span></span>
+<span class="line"><span>  |                         - let's call the lifetime of this reference `'1`</span></span>
+<span class="line"><span>...</span></span>
+<span class="line"><span>6 |     (&#x26;mut values[..mid], &#x26;mut values[mid..])</span></span>
+<span class="line"><span>  |     --------------------------^^^^^^--------</span></span>
+<span class="line"><span>  |     |     |                   |</span></span>
+<span class="line"><span>  |     |     |                   second mutable borrow occurs here</span></span>
+<span class="line"><span>  |     |     first mutable borrow occurs here</span></span>
+<span class="line"><span>  |     returning this value requires that `*values` is borrowed for `'1`</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 20-6：以 unsafe 實作，對外仍是安全函式</span><button class="cb-copy" data-code="use std::slice;
+
+fn split_at_mut(values: &amp;mut [i32], mid: usize) -> (&amp;mut [i32], &amp;mut [i32]) {
+    let len = values.len();
+    let ptr = values.as_mut_ptr();
+
+    assert!(mid <= len);
+
+    unsafe {
+        (
+            slice::from_raw_parts_mut(ptr, mid),
+            slice::from_raw_parts_mut(ptr.add(mid), len - mid),
+        )
+    }
+}
+
+fn main() {
+    let mut vector = vec![1, 2, 3, 4, 5, 6];
+    let (left, right) = split_at_mut(&amp;mut vector, 3);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::slice;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> split_at_mut</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">values</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#C678DD">mut</span><span style="color:#ABB2BF"> [</span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">], </span><span style="color:#E06C75">mid</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">usize</span><span style="color:#ABB2BF">) -> (&#x26;</span><span style="color:#C678DD">mut</span><span style="color:#ABB2BF"> [</span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">], &#x26;</span><span style="color:#C678DD">mut</span><span style="color:#ABB2BF"> [</span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">]) {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> len</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> values</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> ptr</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> values</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_mut_ptr</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    assert!</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">mid</span><span style="color:#56B6C2"> &#x3C;=</span><span style="color:#E06C75"> len</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    unsafe</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#ABB2BF">        (</span></span>
+<span class="line"><span style="color:#E5C07B">            slice</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_raw_parts_mut</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">ptr</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">mid</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">            slice</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_raw_parts_mut</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">ptr</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">add</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">mid</span><span style="color:#ABB2BF">), </span><span style="color:#E06C75">len</span><span style="color:#ABB2BF"> - </span><span style="color:#E06C75">mid</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">        )</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> vector</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">4</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">5</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">6</span><span style="color:#ABB2BF">];</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#ABB2BF"> (</span><span style="color:#E06C75">left</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">right</span><span style="color:#ABB2BF">) </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> split_at_mut</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#C678DD">mut</span><span style="color:#E06C75"> vector</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>這裡保留了 <code>assert!(mid &lt;= len)</code>，並只在小範圍內使用 <code>slice::from_raw_parts_mut</code> 與 <code>ptr.add</code>。因為它們必須信任指標有效，所以是 unsafe；但 <code>split_at_mut</code> 本身不必標成 unsafe，可以從安全程式碼呼叫。</p><h3>extern：呼叫 C 程式碼</h3><p>透過 <code>extern</code> 建立 FFI（Foreign Function Interface）。<code>"C"</code> 指定外部函式使用的 ABI（application binary interface）。下例呼叫 C 標準函式庫的 <code>abs</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 20-8：呼叫 C 的 abs</span><button class="cb-copy" data-code="unsafe extern &quot;C&quot; {
+    fn abs(input: i32) -> i32;
+}
+
+fn main() {
+    unsafe {
+        println!(&quot;Absolute value of -3 according to C: {}&quot;, abs(-3));
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">unsafe</span><span style="color:#C678DD"> extern</span><span style="color:#98C379"> "C"</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> abs</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">input</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    unsafe</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Absolute value of -3 according to C: {}"</span><span style="color:#ABB2BF">, </span><span style="color:#61AFEF">abs</span><span style="color:#ABB2BF">(-</span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>官方也提到 <code>unsafe extern</code> 區塊內的項目預設為 unsafe，確定安全的可以標 <code>safe fn</code>，但這只是你對 Rust 的承諾，不會讓函式真的變安全。反方向（讓 C 呼叫 Rust 函式）則使用 <code>#[unsafe(no_mangle)]</code> 搭配 <code>pub extern "C" fn</code>。</p><h3>可變的 static 變數</h3><p>Rust 的全域變數叫 static。可變的 static 變數若被多個執行緒存取，可能造成資料競爭，所以讀寫都必須放在 <code>unsafe</code> 內。官方範例展示了慣例：unsafe 函式寫一段以 <code>SAFETY</code> 開頭的註解，說明呼叫者要滿足什麼條件。另外編譯器預設會拒絕建立指向可變 static 的參考，所以這裡用 <code>&amp;raw const</code> 讀取：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 20-11：可變 static 計數器</span><button class="cb-copy" data-code="static mut COUNTER: u32 = 0;
+
+/// SAFETY: Calling this from more than a single thread at a time is undefined
+/// behavior, so you *must* guarantee you only call it from a single thread at
+/// a time.
+unsafe fn add_to_count(inc: u32) {
+    unsafe {
+        COUNTER += inc;
+    }
+}
+
+fn main() {
+    unsafe {
+        // SAFETY: This is only called from a single thread in `main`.
+        add_to_count(3);
+        println!(&quot;COUNTER: {}&quot;, *(&amp;raw const COUNTER));
+    }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">static</span><span style="color:#C678DD"> mut</span><span style="color:#D19A66"> COUNTER</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u32</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// SAFETY: Calling this from more than a single thread at a time is undefined</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// behavior, so you *must* guarantee you only call it from a single thread at</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// a time.</span></span>
+<span class="line"><span style="color:#C678DD">unsafe</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> add_to_count</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">inc</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">u32</span><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#C678DD">    unsafe</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#D19A66">        COUNTER</span><span style="color:#56B6C2"> +=</span><span style="color:#E06C75"> inc</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    unsafe</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">        // SAFETY: This is only called from a single thread in `main`.</span></span>
+<span class="line"><span style="color:#61AFEF">        add_to_count</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"COUNTER: {}"</span><span style="color:#ABB2BF">, *(&#x26;</span><span style="color:#E06C75">raw</span><span style="color:#C678DD"> const</span><span style="color:#D19A66"> COUNTER</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h3>Miri 與 Rustonomicon</h3><p>寫 unsafe 程式碼時，Rust Book 建議用官方工具 Miri 偵測未定義行為（undefined behavior）。它需要 nightly 版 Rust，用 <code>cargo +nightly miri run</code> 執行；官方示範用它檢查「在任意位址建立 10,000 個元素切片」的錯誤範例時，Miri 會回報 Undefined Behavior。如果想深入 unsafe，The Rustonomicon 是官方的進階參考：它假設讀者已熟悉 Rust 與基本系統程式設計，主題涵蓋（不安全）的意義、安全抽象技巧、subtyping 與 variance、panic 安全性等；該書自述尚未完整，且與 The Reference 若有出入，以 The Reference 為準。</p><div class="call info"><span class="ci">ℹ️</span><div><strong>本章未涵蓋</strong><p>unsafe trait 與 union 的實作細節只在素材中簡述，本章沒有展開；Rustonomicon 的素材也只有簡介頁，其內容不在本章討論。</p></div></div><figure class="svg-fig"><img src="/rust/img/ch11/03-flowchart-safe-abstraction-practice.png" alt="unsafe 最佳實務順序：縮小區塊、對外安全、寫註解、用 Miri 檢查" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 11-4：unsafe 的實務順序：縮小區塊、對外提供安全介面、寫註解、用 Miri 檢查</figcaption></figure><h2>小結</h2><ul><li><code>Box&lt;T&gt;</code>：資料放堆積，指標大小固定，能讓遞迴型別有確定大小。</li><li><code>Rc&lt;T&gt;</code>：參考計數的共享所有權，只限單執行緒、唯讀共享。</li><li><code>unsafe</code> 不是關掉安全檢查，而是五種被明確標示的操作；最佳實務是縮小區塊、對外提供安全 API、寫 <code>SAFETY</code> 註解，並用 Miri 檢查。</li></ul><p><code>Rc&lt;T&gt;</code> 的單執行緒限制與可變 static 的資料競爭問題，正好引出下一章「無畏並行：執行緒、通道與共享狀態」：Rust 如何在編譯期就擋掉資料競爭。</p></div><nav class="cnav" data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" class="prev" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>← 上一章</span><span class="nt" data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a><a href="/rust/ch12-concurrency" class="next" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>下一章 →</span><span class="nt" data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></nav></main></div><script>
+    // Theme
+    const html = document.documentElement;
+    const tt = document.getElementById('tt');
+    const isun = document.getElementById('isun');
+    const imoon = document.getElementById('imoon');
+    function syncIcons() {
+      const dk = html.classList.contains('dark');
+      isun.style.display = dk ? 'block' : 'none';
+      imoon.style.display = dk ? 'none' : 'block';
+    }
+    syncIcons();
+    tt?.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('cc-theme', html.classList.contains('dark') ? 'dark' : 'light');
+      syncIcons();
+    });
+
+    // Progress
+    const pb = document.getElementById('pb');
+    window.addEventListener('scroll', () => {
+      const t = document.documentElement.scrollHeight - window.innerHeight;
+      pb.style.width = t > 0 ? `${(window.scrollY / t) * 100}%` : '0%';
+    }, { passive: true });
+
+    // Sidebar part toggles
+    document.querySelectorAll('.pt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pid;
+        const list = document.querySelector(`[data-pl="${id}"]`);
+        btn.classList.toggle('open');
+        list?.classList.toggle('closed');
+      });
+    });
+
+    // Mobile menu
+    const sb = document.getElementById('sb');
+    const ov = document.getElementById('ov');
+    const mb = document.getElementById('mbtn');
+    const open = () => { sb.classList.add('open'); ov.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close = () => { sb.classList.remove('open'); ov.classList.remove('open'); document.body.style.overflow=''; };
+    mb?.addEventListener('click', open);
+    ov?.addEventListener('click', close);
+  </script></body></html>

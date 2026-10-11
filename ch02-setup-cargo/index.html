@@ -1,0 +1,238 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-ccykbmgk><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>安裝與 Cargo：第一個專案 | Rust 實戰指南</title><meta name="description" content="用 rustup 安裝 Rust 工具鏈、驗證與更新，再用 Cargo 建立第一個專案：Cargo.toml、build、run、check 與 release 的差異，並簡介依賴、文件註解與發布到 crates.io 的流程。"><link rel="icon" href="/rust/favicon.svg" type="image/svg+xml"><script>
+    (function () {
+      const s = localStorage.getItem('cc-theme');
+      const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark');
+    })();
+  </script><link rel="stylesheet" href="/rust/_astro/DocsLayout.9CQhNdRI.css"><style>.cb-wrap[data-astro-cid-c6nuo4je]{margin-bottom:1.25rem}.cb-bar[data-astro-cid-c6nuo4je]{background:#1a1a2e;border:1px solid #ffffff14;border-bottom-color:#ffffff0d;border-radius:6px 6px 0 0;justify-content:space-between;align-items:center;min-height:1.8rem;padding:.18rem .5rem .18rem .75rem;display:flex}.cb-label[data-astro-cid-c6nuo4je]{color:#a6adc8;letter-spacing:.04em;font-family:Fira Code,Cascadia Code,Consolas,monospace;font-size:.73rem}.cb-inner[data-astro-cid-c6nuo4je] pre{border-radius:0 0 8px 8px!important;margin-bottom:0!important}.cb-copy[data-astro-cid-c6nuo4je]{color:#888;cursor:pointer;background:#ffffff14;border:1px solid #ffffff1f;border-radius:4px;flex-shrink:0;padding:.15rem .55rem;font-size:.7rem;transition:all .15s}.cb-copy[data-astro-cid-c6nuo4je]:hover{color:#fff;background:#ffffff2e}.cb-copy[data-astro-cid-c6nuo4je].copied{color:#4ec9b0;border-color:#4ec9b0}
+</style></head><body data-astro-cid-ccykbmgk><div id="pb" data-astro-cid-ccykbmgk></div><header data-astro-cid-ccykbmgk><div class="hi" data-astro-cid-ccykbmgk><div class="hl" data-astro-cid-ccykbmgk><button id="mbtn" class="ibtn" aria-label="選單" data-astro-cid-ccykbmgk><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" data-astro-cid-ccykbmgk></path></svg></button><a href="/rust/" class="site-name" data-astro-cid-ccykbmgk><span class="logo" data-astro-cid-ccykbmgk>RS</span>&nbsp;&nbsp;Rust 實戰指南</a></div><div class="hr" data-astro-cid-ccykbmgk><button id="tt" class="ibtn" aria-label="切換主題" data-astro-cid-ccykbmgk><svg id="isun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" data-astro-cid-ccykbmgk></path></svg><svg id="imoon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" data-astro-cid-ccykbmgk></path></svg></button></div></div></header><div id="layout" data-astro-cid-ccykbmgk><nav id="sb" data-astro-cid-ccykbmgk><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="0" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 0：前言</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="0" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/preface" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>0.</span><span data-astro-cid-ccykbmgk>前言</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="1" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 1：認識 Rust</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="1" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>1.</span><span data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch02-setup-cargo" class="active" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>2.</span><span data-astro-cid-ccykbmgk>安裝與 Cargo：第一個專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>3.</span><span data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>4.</span><span data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="2" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 2：所有權：Rust 的核心</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="2" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>5.</span><span data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>6.</span><span data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch07-lifetimes" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>7.</span><span data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>8.</span><span data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="3" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 3：型別系統與錯誤處理</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="3" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>9.</span><span data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>10.</span><span data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>11.</span><span data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="4" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 4：並行與非同步</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="4" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch12-concurrency" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>12.</span><span data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>13.</span><span data-astro-cid-ccykbmgk>async/await 基礎</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>14.</span><span data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="5" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 5：工程實務與生態</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="5" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch15-idioms-and-project" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>15.</span><span data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch16-systems-linux-embedded" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>16.</span><span data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch17-reality-check" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>17.</span><span data-astro-cid-ccykbmgk>現實檢查：批評、代價與重寫案例</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="6" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 6：附錄</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="6" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/glossary" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>18.</span><span data-astro-cid-ccykbmgk>名詞解釋</span></a></li></ul></div></nav><div id="ov" data-astro-cid-ccykbmgk></div><main data-astro-cid-ccykbmgk><div class="cb" data-astro-cid-ccykbmgk><span class="clabel">第 2 章 · Part 1：認識 Rust</span><h1>安裝與 Cargo：第一個專案</h1><p class="cdesc">從零安裝到跑起第一個 Cargo 專案，順便看一眼你以後會用到的發布流程。</p><h2>用 rustup 安裝</h2><p>官方建議透過 <code>rustup</code> 安裝 Rust。它是管理 Rust 版本與相關工具的命令列工具，安裝時需要網路連線，預設會裝最新的穩定版編譯器。Rust Book 並保證：能編譯的範例在較新的穩定版仍能編譯，只是輸出訊息可能略有不同。</p><h3>Linux 與 macOS</h3><p>開啟終端機，輸入下面的指令。安裝成功時會出現「Rust is installed now. Great!」。你還需要一個連結器（linker），Rust 用它把編譯結果合成一個檔案；多數人已經有了，遇到連結器錯誤再安裝 C 編譯器即可。macOS 可執行 <code>xcode-select --install</code>，Linux 則依發行版安裝 GCC 或 Clang，例如 Ubuntu 的 <code>build-essential</code> 套件。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>安裝 rustup（取自 Rust Book「Installation」）</span><button class="cb-copy" data-code="$ curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> curl</span><span style="color:#D19A66"> --proto</span><span style="color:#98C379"> '=https'</span><span style="color:#D19A66"> --tlsv1.2</span><span style="color:#98C379"> https://sh.rustup.rs</span><span style="color:#D19A66"> -sSf</span><span style="color:#ABB2BF"> | </span><span style="color:#61AFEF">sh</span></span></code></pre></div></div><script type="module">document.querySelectorAll(`.cb-copy`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.code;t&&navigator.clipboard.writeText(t).then(()=>{e.textContent=`已複製!`,e.classList.add(`copied`),setTimeout(()=>{e.textContent=`複製`,e.classList.remove(`copied`)},2e3)})})});</script><h3>Windows</h3><p>到 <a href="https://www.rust-lang.org/tools/install">rust-lang.org/tools/install</a> 依指示安裝。過程中會提示安裝 Visual Studio，因為它提供連結器與編譯所需的原生函式庫。書中後續的指令在 cmd.exe 與 PowerShell 都能執行。</p><h3>驗證、更新與反安裝</h3><p>用 <code>rustc --version</code> 確認安裝成功，輸出格式是版本號、commit hash 與 commit 日期。若看不到，檢查 PATH：Windows CMD 用 <code>echo %PATH%</code>，PowerShell 用 <code>echo $env:Path</code>，Linux 與 macOS 用 <code>echo $PATH</code>。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>驗證、更新、反安裝與離線文件（取自 Rust Book「Installation」）</span><button class="cb-copy" data-code="$ rustc --version
+rustc x.y.z (abcabcabc yyyy-mm-dd)
+
+$ rustup update
+$ rustup self uninstall
+$ rustup doc" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> rustc</span><span style="color:#D19A66"> --version</span></span>
+<span class="line"><span style="color:#61AFEF">rustc</span><span style="color:#98C379"> x.y.z</span><span style="color:#ABB2BF"> (abcabcabc </span><span style="color:#98C379">yyyy-mm-dd</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> rustup</span><span style="color:#98C379"> update</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> rustup</span><span style="color:#98C379"> self</span><span style="color:#98C379"> uninstall</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> rustup</span><span style="color:#98C379"> doc</span></span></code></pre></div></div><p><code>rustup doc</code> 會在瀏覽器開啟安裝時一併附上的本機文件，不需要網路。遇到標準函式庫的型別或函式不確定用法時，查 API 文件最快。編輯器方面，書中沒有指定工具，幾乎任何文字編輯器都行，官網的 tools 頁列有支援 Rust 的編輯器與 IDE。</p><h2>第一個 Cargo 專案</h2><p>Cargo 是 Rust 的建置系統與套件管理工具：編譯你的程式、下載依賴（你的程式需要的函式庫）、也編譯這些依賴。官方安裝程式會一併裝好 Cargo，可用 <code>cargo --version</code> 確認。Rust Book 後續章節都假設你使用 Cargo，本書也是。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>建立專案（取自 Rust Book「Hello, Cargo!」）</span><button class="cb-copy" data-code="$ cargo new hello_cargo
+$ cd hello_cargo" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> new</span><span style="color:#98C379"> hello_cargo</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cd</span><span style="color:#98C379"> hello_cargo</span></span></code></pre></div></div><p>Cargo 會建立同名目錄，內含 <code>Cargo.toml</code> 與 <code>src/main.rs</code>，並初始化 Git 儲存庫和 <code>.gitignore</code>；若已在 Git 儲存庫內執行則不會重複建立，也可用 <code>--vcs</code> 旗標改用其他版本控制。<code>Cargo.toml</code> 使用 TOML 格式，<code>[package]</code> 區段記錄名稱、版本與 edition，<code>[dependencies]</code> 區段列出依賴；Rust 的程式碼套件稱為 crate。edition 的意義在上一章說明過，這裡的 <code>2024</code> 表示使用 Rust 2024 edition。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Cargo.toml（Rust Book Listing 1-2）</span><button class="cb-copy" data-code="[package]
+name = &quot;hello_cargo&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2024&quot;
+
+[dependencies]" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="toml"><code><span class="line"><span style="color:#ABB2BF">[</span><span style="color:#61AFEF">package</span><span style="color:#ABB2BF">]</span></span>
+<span class="line"><span style="color:#E06C75">name</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"hello_cargo"</span></span>
+<span class="line"><span style="color:#E06C75">version</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"0.1.0"</span></span>
+<span class="line"><span style="color:#E06C75">edition</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"2024"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">[</span><span style="color:#61AFEF">dependencies</span><span style="color:#ABB2BF">]</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>src/main.rs</span><button class="cb-copy" data-code="fn main() {
+    println!(&quot;Hello, world!&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Hello, world!"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>Cargo 預期原始碼放在 <code>src</code> 目錄；專案根目錄留給 README、授權資訊、設定檔等與程式碼無關的東西。已有不用 Cargo 的專案，可把程式碼移進 <code>src</code>，再執行 <code>cargo init</code> 產生 <code>Cargo.toml</code>。</p><figure class="svg-fig"><img src="/rust/img/ch02/01-framework-toolchain-map.png" alt="rustup、rustc、cargo 與 crate 之間的關係圖" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 2-1：rustup、rustc、cargo 與 crate 的分工與關係</figcaption></figure><h2>build、run、check 與 release</h2><p><code>cargo build</code> 在 <code>target/debug/</code> 產生可執行檔（Windows 上是 <code>.exe</code>），第一次執行還會在根目錄建立 <code>Cargo.lock</code>，記錄依賴的精確版本，由 Cargo 管理，不需要手動修改。<code>cargo run</code> 則把編譯與執行合為一步；原始碼沒變時，Cargo 會直接執行，不重新編譯。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>build 與 run（取自 Rust Book「Hello, Cargo!」）</span><button class="cb-copy" data-code="$ cargo build
+   Compiling hello_cargo v0.1.0 (file:///projects/hello_cargo)
+    Finished dev [unoptimized + debuginfo] target(s) in 2.85 secs
+
+$ ./target/debug/hello_cargo # or .\target\debug\hello_cargo.exe on Windows
+Hello, world!
+
+$ cargo run
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running `target/debug/hello_cargo`
+Hello, world!" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> build</span></span>
+<span class="line"><span style="color:#61AFEF">   Compiling</span><span style="color:#98C379"> hello_cargo</span><span style="color:#98C379"> v0.1.0</span><span style="color:#ABB2BF"> (file:///projects/hello_cargo)</span></span>
+<span class="line"><span style="color:#61AFEF">    Finished</span><span style="color:#98C379"> dev</span><span style="color:#ABB2BF"> [unoptimized </span><span style="color:#98C379">+</span><span style="color:#98C379"> debuginfo]</span><span style="color:#98C379"> target</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">s</span><span style="color:#ABB2BF">) </span><span style="color:#98C379">in</span><span style="color:#D19A66"> 2.85</span><span style="color:#98C379"> secs</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> ./target/debug/hello_cargo</span><span style="color:#7F848E;font-style:italic"> # or .\target\debug\hello_cargo.exe on Windows</span></span>
+<span class="line"><span style="color:#61AFEF">Hello,</span><span style="color:#98C379"> world!</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> run</span></span>
+<span class="line"><span style="color:#61AFEF">    Finished</span><span style="color:#98C379"> dev</span><span style="color:#ABB2BF"> [unoptimized </span><span style="color:#98C379">+</span><span style="color:#98C379"> debuginfo]</span><span style="color:#98C379"> target</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">s</span><span style="color:#ABB2BF">) </span><span style="color:#98C379">in</span><span style="color:#D19A66"> 0.0</span><span style="color:#98C379"> secs</span></span>
+<span class="line"><span style="color:#61AFEF">     Running</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">target/debug/hello_cargo</span><span style="color:#98C379">`</span></span>
+<span class="line"><span style="color:#61AFEF">Hello,</span><span style="color:#98C379"> world!</span></span></code></pre></div></div><div class="call info"><span class="ci">ℹ️</span><div><strong>輸出格式隨版本而異</strong><p>上面是 Hello, Cargo! 一節的輸出，寫著 <code>dev [unoptimized + debuginfo]</code>；同一本書其他章節的輸出則寫成「dev profile」加上相同的括號內容（例如 Rust Book 的 Control Flow 一節的 cargo run 輸出）。這是官方文件不同時期的差異，不是你的環境壞了。</p></div></div><p><code>cargo check</code> 只檢查程式能不能編譯，不產生可執行檔，因此通常比 <code>cargo build</code> 快很多，很多 Rustacean（Rust 社群的自稱）寫程式時會定期執行，準備好要執行時再 build。Cargo 的指令在各作業系統上都一樣，這是它相對於直接呼叫 <code>rustc</code> 的優點。</p><table><thead><tr><th>指令</th><th>用途</th><th>輸出位置</th></tr></thead><tbody><tr><td><code>cargo new</code></td><td>建立新專案</td><td>同名目錄</td></tr><tr><td><code>cargo build</code></td><td>建置（預設 debug 模式）</td><td><code>target/debug</code></td></tr><tr><td><code>cargo run</code></td><td>建置並執行</td><td><code>target/debug</code></td></tr><tr><td><code>cargo check</code></td><td>只檢查能否編譯，不產生執行檔</td><td>無</td></tr><tr><td><code>cargo build --release</code></td><td>開啟最佳化的發布建置</td><td><code>target/release</code></td></tr></tbody></table><figure class="svg-fig"><svg width="100%" height="auto" viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr-c02" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--muted)" />
+    </marker>
+  </defs>
+  <g font-family="system-ui, sans-serif">
+    <text x="20" y="28" font-size="16px" font-weight="700" fill="var(--accent)">開發迴圈（debug，輸出 target/debug）</text>
+
+    <rect x="20" y="45" width="160" height="60" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="100" y="72" text-anchor="middle" font-size="16px" fill="var(--text)">cargo new</text>
+    <text x="100" y="94" text-anchor="middle" font-size="14px" fill="var(--muted)">建立專案</text>
+
+    <rect x="215" y="45" width="160" height="60" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="295" y="72" text-anchor="middle" font-size="15px" fill="var(--text)">編輯 src/main.rs</text>
+    <text x="295" y="94" text-anchor="middle" font-size="14px" fill="var(--muted)">程式放在 src</text>
+
+    <rect x="410" y="45" width="160" height="60" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="490" y="72" text-anchor="middle" font-size="16px" fill="var(--text)">cargo check</text>
+    <text x="490" y="94" text-anchor="middle" font-size="14px" fill="var(--muted)">只檢查，不產生執行檔</text>
+
+    <rect x="605" y="45" width="160" height="60" rx="8" fill="var(--bg2)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="685" y="72" text-anchor="middle" font-size="16px" fill="var(--text)">cargo build / run</text>
+    <text x="685" y="94" text-anchor="middle" font-size="14px" fill="var(--muted)">編譯並執行</text>
+
+    <path d="M 180 75 L 207 75" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-c02)"/>
+    <path d="M 375 75 L 402 75" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-c02)"/>
+    <path d="M 570 75 L 597 75" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-c02)"/>
+
+    <path d="M 685 105 L 685 140 L 130 140 L 130 167" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-c02)"/>
+    <text x="410" y="131" text-anchor="middle" font-size="14px" fill="var(--muted)">準備交付</text>
+
+    <rect x="20" y="175" width="220" height="60" rx="8" fill="var(--bg2)" stroke="var(--accent2)" stroke-width="2"/>
+    <text x="130" y="202" text-anchor="middle" font-size="16px" fill="var(--text)">cargo build --release</text>
+    <text x="130" y="224" text-anchor="middle" font-size="14px" fill="var(--muted)">最佳化，輸出 target/release</text>
+
+    <rect x="285" y="175" width="220" height="60" rx="8" fill="var(--bg2)" stroke="var(--accent2)" stroke-width="2"/>
+    <text x="395" y="202" text-anchor="middle" font-size="16px" fill="var(--text)">cargo publish</text>
+    <text x="395" y="224" text-anchor="middle" font-size="14px" fill="var(--muted)">發布到 crates.io</text>
+
+    <rect x="550" y="175" width="220" height="60" rx="8" fill="var(--bg2)" stroke="var(--accent2)" stroke-width="2"/>
+    <text x="660" y="202" text-anchor="middle" font-size="16px" fill="var(--text)">cargo yank</text>
+    <text x="660" y="224" text-anchor="middle" font-size="14px" fill="var(--muted)">阻止新專案依賴</text>
+
+    <path d="M 240 205 L 277 205" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-c02)"/>
+    <path d="M 505 205 L 542 205" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-c02)"/>
+  </g>
+</svg><figcaption>圖 2-2：從 cargo new 到發布的指令流程</figcaption></figure><p>發布建置用 <code>cargo build --release</code>：最佳化讓程式跑得更快，代價是編譯時間更長，這也是為什麼有兩種 profile——開發時要頻繁重編，所以用不最佳化的 debug；交付給使用者的版本才用 release。官方特別提醒：要量測執行時間，務必用 <code>target/release</code> 的執行檔。接手別人的專案時，慣例流程也很簡單：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>取得並建置現有專案（取自 Rust Book）</span><button class="cb-copy" data-code="$ git clone example.org/someproject
+$ cd someproject
+$ cargo build" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> git</span><span style="color:#98C379"> clone</span><span style="color:#98C379"> example.org/someproject</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cd</span><span style="color:#98C379"> someproject</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> build</span></span></code></pre></div></div><figure class="svg-fig"><img src="/rust/img/ch02/02-comparison-debug-vs-release.png" alt="debug 與 release 兩種 profile 的取捨對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 2-3：debug 與 release 兩種建置的取捨對照</figcaption></figure><h2>依賴與離線準備</h2><p>Rust Book 的部分範例會用到標準函式庫以外的套件，需要網路，或事先把依賴下載到快取。做法是建立一個暫時專案，用 <code>cargo add</code> 加入書中用到的 crate，之後所有 <code>cargo</code> 指令都可加 <code>--offline</code> 使用快取。官方給的版本是 <code>rand@0.10.1</code> 與 <code>trpl@0.2.0</code>，這是該書撰寫當下的版本，你實際使用時請以書中指示為準。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>預先下載依賴（取自 Rust Book「Installation」）</span><button class="cb-copy" data-code="$ cargo new get-dependencies
+$ cd get-dependencies
+$ cargo add rand@0.10.1 trpl@0.2.0" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> new</span><span style="color:#98C379"> get-dependencies</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cd</span><span style="color:#98C379"> get-dependencies</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> add</span><span style="color:#98C379"> rand@0.10.1</span><span style="color:#98C379"> trpl@0.2.0</span></span></code></pre></div></div><p>依賴通常配合 Serde 這類 crate 使用。Serde 官方說明它是高效且通用的序列化與反序列化框架，設計上不靠執行期反射，而是靠 trait 系統：資料結構實作 <code>Serialize</code> 與 <code>Deserialize</code>，或用 derive 屬性在編譯期自動產生實作。因此幾乎沒有反射的額外開銷。下面是官方範例；素材沒有提供對應的 <code>Cargo.toml</code> 設定，實際使用需要在專案加入 serde 與 serde_json 兩個依賴，並依 serde 官方文件啟用 derive 功能。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Serde 的 derive 範例（取自 Serde 官方 Overview）</span><button class="cb-copy" data-code="use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn main() {
+    let point = Point { x: 1, y: 2 };
+
+    // Convert the Point to a JSON string.
+    let serialized = serde_json::to_string(&amp;point).unwrap();
+
+    // Prints serialized = {&quot;x&quot;:1,&quot;y&quot;:2}
+    println!(&quot;serialized = {}&quot;, serialized);
+
+    // Convert the JSON string back to a Point.
+    let deserialized: Point = serde_json::from_str(&amp;serialized).unwrap();
+
+    // Prints deserialized = Point { x: 1, y: 2 }
+    println!(&quot;deserialized = {:?}&quot;, deserialized);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> serde</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">Serialize</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Deserialize</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">#[derive(</span><span style="color:#E5C07B">Serialize</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Deserialize</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Debug</span><span style="color:#ABB2BF">)]</span></span>
+<span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> Point</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    x</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75">    y</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> point</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Point</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF"> };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Convert the Point to a JSON string.</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> serialized</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> serde_json</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">to_string</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">point</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Prints serialized = {"x":1,"y":2}</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"serialized = {}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">serialized</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Convert the JSON string back to a Point.</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> deserialized</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Point</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> serde_json</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_str</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">serialized</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Prints deserialized = Point { x: 1, y: 2 }</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"deserialized = {:?}"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">deserialized</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h2>文件註解與發布到 crates.io</h2><p>Rust 有專門的文件註解：三條斜線 <code>///</code> 支援 Markdown，放在被說明的項目之前，<code>cargo doc</code> 會呼叫 <code>rustdoc</code> 產生 HTML，輸出在 <code>target/doc</code>，<code>cargo doc --open</code> 還會直接在瀏覽器打開。範例區塊還有額外好處：執行 <code>cargo test</code> 時，文件裡的程式碼也會被當成測試跑，避免範例和程式碼脫節。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>文件註解（Rust Book Listing 14-1，my_crate::add_one）</span><button class="cb-copy" data-code="/// Adds one to the number given.
+///
+/// # Examples
+///
+/// ```
+/// let arg = 5;
+/// let answer = my_crate::add_one(arg);
+///
+/// assert_eq!(6, answer);
+/// ```
+pub fn add_one(x: i32) -> i32 {
+    x + 1
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#7F848E;font-style:italic">/// Adds one to the number given.</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">///</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// # Examples</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">///</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// ```</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// let arg = 5;</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// let answer = my_crate::add_one(arg);</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">///</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// assert_eq!(6, answer);</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">/// ```</span></span>
+<span class="line"><span style="color:#C678DD">pub</span><span style="color:#C678DD"> fn</span><span style="color:#61AFEF"> add_one</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    x</span><span style="color:#ABB2BF"> + </span><span style="color:#D19A66">1</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>要把自己的 crate 發布到 crates.io，流程是：用 GitHub 帳號登入 crates.io、在帳號設定取得 API token，執行 <code>cargo login</code> 貼上；token 存在本機 <code>~/.cargo/credentials.toml</code>，屬機密，外流就要撤銷重發。接著在 <code>Cargo.toml</code> 補齊 crate 名稱（先到先得）、<code>description</code> 與 <code>license</code>（用 SPDX 識別碼，Rust 社群常見的是 <code>MIT OR Apache-2.0</code> 雙授權），缺欄位時 <code>cargo publish</code> 會報錯。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>準備發布的 Cargo.toml（取自 Rust Book）</span><button class="cb-copy" data-code="[package]
+name = &quot;guessing_game&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2024&quot;
+description = &quot;A fun game where you guess what number the computer has chosen.&quot;
+license = &quot;MIT OR Apache-2.0&quot;
+
+[dependencies]" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="toml"><code><span class="line"><span style="color:#ABB2BF">[</span><span style="color:#61AFEF">package</span><span style="color:#ABB2BF">]</span></span>
+<span class="line"><span style="color:#E06C75">name</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"guessing_game"</span></span>
+<span class="line"><span style="color:#E06C75">version</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"0.1.0"</span></span>
+<span class="line"><span style="color:#E06C75">edition</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"2024"</span></span>
+<span class="line"><span style="color:#E06C75">description</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"A fun game where you guess what number the computer has chosen."</span></span>
+<span class="line"><span style="color:#E06C75">license</span><span style="color:#ABB2BF"> = </span><span style="color:#98C379">"MIT OR Apache-2.0"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">[</span><span style="color:#61AFEF">dependencies</span><span style="color:#ABB2BF">]</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>發布與撤回（yank）（取自 Rust Book）</span><button class="cb-copy" data-code="$ cargo publish
+$ cargo yank --vers 1.0.1
+$ cargo yank --vers 1.0.1 --undo" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> publish</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> yank</span><span style="color:#D19A66"> --vers</span><span style="color:#D19A66"> 1.0.1</span></span>
+<span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> yank</span><span style="color:#D19A66"> --vers</span><span style="color:#D19A66"> 1.0.1</span><span style="color:#D19A66"> --undo</span></span></code></pre></div></div><div class="call warn"><span class="ci">⚠️</span><div><strong>發布是永久的</strong><p>版本一旦上傳就不能覆寫，程式碼也只在特殊情況才能刪除；crates.io 的目標是當成永久封存，讓所有依賴它的專案都能持續建置。出錯的版本可用 <code>cargo yank</code> 阻止新專案依賴，但既有的 <code>Cargo.lock</code> 不受影響。</p></div></div><p>環境與工具都備妥了。下一章我們就用這個專案，快速走過 Rust 的基礎語法：變數、型別、控制流、struct、enum、match、Vec 與 String。</p></div><nav class="cnav" data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" class="prev" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>← 上一章</span><span class="nt" data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a><a href="/rust/ch03-syntax-crash-course" class="next" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>下一章 →</span><span class="nt" data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></nav></main></div><script>
+    // Theme
+    const html = document.documentElement;
+    const tt = document.getElementById('tt');
+    const isun = document.getElementById('isun');
+    const imoon = document.getElementById('imoon');
+    function syncIcons() {
+      const dk = html.classList.contains('dark');
+      isun.style.display = dk ? 'block' : 'none';
+      imoon.style.display = dk ? 'none' : 'block';
+    }
+    syncIcons();
+    tt?.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('cc-theme', html.classList.contains('dark') ? 'dark' : 'light');
+      syncIcons();
+    });
+
+    // Progress
+    const pb = document.getElementById('pb');
+    window.addEventListener('scroll', () => {
+      const t = document.documentElement.scrollHeight - window.innerHeight;
+      pb.style.width = t > 0 ? `${(window.scrollY / t) * 100}%` : '0%';
+    }, { passive: true });
+
+    // Sidebar part toggles
+    document.querySelectorAll('.pt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pid;
+        const list = document.querySelector(`[data-pl="${id}"]`);
+        btn.classList.toggle('open');
+        list?.classList.toggle('closed');
+      });
+    });
+
+    // Mobile menu
+    const sb = document.getElementById('sb');
+    const ov = document.getElementById('ov');
+    const mb = document.getElementById('mbtn');
+    const open = () => { sb.classList.add('open'); ov.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close = () => { sb.classList.remove('open'); ov.classList.remove('open'); document.body.style.overflow=''; };
+    mb?.addEventListener('click', open);
+    ov?.addEventListener('click', close);
+  </script></body></html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-ccykbmgk><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>所有權：堆疊、堆積與三條規則 | Rust 實戰指南</title><meta name="description" content="從堆疊與堆積的差異談起，說明所有權三條規則、移動（move）語意、clone 與 Copy、drop 與函式傳值，並用官方 Rust Book 的範例看編譯器如何在編譯期追蹤誰擁有資料。"><link rel="icon" href="/rust/favicon.svg" type="image/svg+xml"><script>
+    (function () {
+      const s = localStorage.getItem('cc-theme');
+      const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark');
+    })();
+  </script><link rel="stylesheet" href="/rust/_astro/DocsLayout.9CQhNdRI.css"><style>.cb-wrap[data-astro-cid-c6nuo4je]{margin-bottom:1.25rem}.cb-bar[data-astro-cid-c6nuo4je]{background:#1a1a2e;border:1px solid #ffffff14;border-bottom-color:#ffffff0d;border-radius:6px 6px 0 0;justify-content:space-between;align-items:center;min-height:1.8rem;padding:.18rem .5rem .18rem .75rem;display:flex}.cb-label[data-astro-cid-c6nuo4je]{color:#a6adc8;letter-spacing:.04em;font-family:Fira Code,Cascadia Code,Consolas,monospace;font-size:.73rem}.cb-inner[data-astro-cid-c6nuo4je] pre{border-radius:0 0 8px 8px!important;margin-bottom:0!important}.cb-copy[data-astro-cid-c6nuo4je]{color:#888;cursor:pointer;background:#ffffff14;border:1px solid #ffffff1f;border-radius:4px;flex-shrink:0;padding:.15rem .55rem;font-size:.7rem;transition:all .15s}.cb-copy[data-astro-cid-c6nuo4je]:hover{color:#fff;background:#ffffff2e}.cb-copy[data-astro-cid-c6nuo4je].copied{color:#4ec9b0;border-color:#4ec9b0}
+</style></head><body data-astro-cid-ccykbmgk><div id="pb" data-astro-cid-ccykbmgk></div><header data-astro-cid-ccykbmgk><div class="hi" data-astro-cid-ccykbmgk><div class="hl" data-astro-cid-ccykbmgk><button id="mbtn" class="ibtn" aria-label="選單" data-astro-cid-ccykbmgk><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" data-astro-cid-ccykbmgk></path></svg></button><a href="/rust/" class="site-name" data-astro-cid-ccykbmgk><span class="logo" data-astro-cid-ccykbmgk>RS</span>&nbsp;&nbsp;Rust 實戰指南</a></div><div class="hr" data-astro-cid-ccykbmgk><button id="tt" class="ibtn" aria-label="切換主題" data-astro-cid-ccykbmgk><svg id="isun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" data-astro-cid-ccykbmgk></path></svg><svg id="imoon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" data-astro-cid-ccykbmgk></path></svg></button></div></div></header><div id="layout" data-astro-cid-ccykbmgk><nav id="sb" data-astro-cid-ccykbmgk><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="0" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 0：前言</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="0" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/preface" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>0.</span><span data-astro-cid-ccykbmgk>前言</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="1" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 1：認識 Rust</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="1" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>1.</span><span data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch02-setup-cargo" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>2.</span><span data-astro-cid-ccykbmgk>安裝與 Cargo：第一個專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>3.</span><span data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>4.</span><span data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="2" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 2：所有權：Rust 的核心</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="2" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" class="active" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>5.</span><span data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>6.</span><span data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch07-lifetimes" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>7.</span><span data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>8.</span><span data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="3" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 3：型別系統與錯誤處理</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="3" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>9.</span><span data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>10.</span><span data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>11.</span><span data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="4" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 4：並行與非同步</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="4" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch12-concurrency" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>12.</span><span data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>13.</span><span data-astro-cid-ccykbmgk>async/await 基礎</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>14.</span><span data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="5" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 5：工程實務與生態</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="5" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch15-idioms-and-project" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>15.</span><span data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch16-systems-linux-embedded" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>16.</span><span data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch17-reality-check" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>17.</span><span data-astro-cid-ccykbmgk>現實檢查：批評、代價與重寫案例</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="6" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 6：附錄</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="6" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/glossary" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>18.</span><span data-astro-cid-ccykbmgk>名詞解釋</span></a></li></ul></div></nav><div id="ov" data-astro-cid-ccykbmgk></div><main data-astro-cid-ccykbmgk><div class="cb" data-astro-cid-ccykbmgk><span class="clabel">第 5 章 · Part 2：所有權：Rust 的核心</span><h1>所有權：堆疊、堆積與三條規則</h1><p class="cdesc">不靠垃圾回收、也不用手動 free：Rust 讓編譯器在編譯期替你管記憶體。</p><p>前四章我們看過 Rust 的定位、工具鏈與基本語法。從這一章開始進入全書最核心的部分：所有權（ownership）。多數初學者在 Rust 卡關，都卡在這裡；但只要把它的設計理由搞懂，後面的借用、生命週期、智慧指標都會順很多。</p><div class="call info"><span class="ci">ℹ️</span><div><strong>本章範例來源</strong><p>程式碼與編譯器輸出取自官方 The Rust Programming Language 的 What is Ownership? 一章（<a href="https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html">doc.rust-lang.org/book/ch04-01-what-is-ownership.html</a>），註解保留原文英文。</p></div></div><h2>三種管理記憶體的方式</h2><p>官方文件把所有權定義為「一組規範 Rust 程式如何管理記憶體的規則」。所有程式在執行時都得處理記憶體的使用，常見做法有三種：</p><table><thead><tr><th>做法</th><th>誰負責回收記憶體</th><th>代表</th></tr></thead><tbody><tr><td>垃圾回收（GC）</td><td>執行時期定期掃描不再使用的記憶體</td><td>有 GC 的語言</td></tr><tr><td>手動配置與釋放</td><td>程式設計師自己呼叫 allocate 與 free</td><td>多數沒有 GC 的語言</td></tr><tr><td>所有權系統</td><td>編譯器依規則檢查，違反就不給編譯</td><td>Rust</td></tr></tbody></table><p>官方文件強調：所有權的各項機制都不會拖慢程式的執行速度，因為檢查全部發生在編譯期。代價是你得先學會這套規則。</p><figure class="svg-fig"><img src="/rust/img/ch05/01-comparison-three-memory-approaches.png" alt="垃圾回收、手動釋放與所有權系統三種記憶體管理方式的對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 5-1：垃圾回收、手動釋放與所有權系統：誰負責回收記憶體，Rust 把檢查放在編譯期</figcaption></figure><h2>先弄清楚堆疊與堆積</h2><p>在 Rust 這類系統程式語言裡，值放在堆疊（stack）還是堆積（heap），會直接影響語言的行為。官方文件的說明可以整理成下表：</p><table><thead><tr><th></th><th>堆疊（stack）</th><th>堆積（heap）</th></tr></thead><tbody><tr><td>存放順序</td><td>後進先出（LIFO），像一疊盤子</td><td>較無組織，向配置器要一塊夠大的空間</td></tr><tr><td>資料大小</td><td>編譯期就必須已知且固定</td><td>編譯期未知或可能變動</td></tr><tr><td>存放方式</td><td>push 與 pop</td><td>配置器找空位、標記為使用中，回傳指標</td></tr><tr><td>速度</td><td>較快，位置永遠在頂端</td><td>較慢，要先找空位並記帳，存取還得跟隨指標</td></tr></tbody></table><p>指標本身大小固定，所以可以放在堆疊上；真要讀資料時才順著指標走到堆積。函式被呼叫時，傳入的值（可能包含指向堆積的指標）與區域變數會 push 到堆疊，函式結束就 pop 掉。</p><p>官方文件指出：追蹤哪段程式碼在使用堆積上的哪些資料、減少重複資料、以及清掉不再使用的資料避免空間耗盡，這些問題正是所有權要解決的。換句話說，所有權的主要目的就是管理堆積資料。</p><figure class="svg-fig"><img src="/rust/img/ch05/02-comparison-stack-vs-heap.png" alt="堆疊與堆積在順序、大小、速度與存放方式上的左右對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 5-2：堆疊與堆積的四項差異：順序、大小、速度、存放方式（依官方 Rust Book）</figcaption></figure><h2>所有權的三條規則</h2><ul><li>Rust 中的每個值都有一個擁有者（owner）。</li><li>同一時間只能有一個擁有者。</li><li>擁有者離開作用域（scope）時，值就會被丟棄（drop）。</li></ul><p>先用最簡單的字串常值看作用域：變數從宣告那一刻起有效，到所在作用域結束為止。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 4-1：變數與其有效範圍（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    {                      // s is not valid here, since it's not yet declared
+        let s = &quot;hello&quot;;   // s is valid from this point forward
+
+        // do stuff with s
+    }                      // this scope is now over, and s is no longer valid
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#ABB2BF">    {                      </span><span style="color:#7F848E;font-style:italic">// s is not valid here, since it's not yet declared</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "hello"</span><span style="color:#ABB2BF">;   </span><span style="color:#7F848E;font-style:italic">// s is valid from this point forward</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">        // do stuff with s</span></span>
+<span class="line"><span style="color:#ABB2BF">    }                      </span><span style="color:#7F848E;font-style:italic">// this scope is now over, and s is no longer valid</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><script type="module">document.querySelectorAll(`.cb-copy`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.code;t&&navigator.clipboard.writeText(t).then(()=>{e.textContent=`已複製!`,e.classList.add(`copied`),setTimeout(()=>{e.textContent=`複製`,e.classList.remove(`copied`)},2e3)})})});</script><h2>String：放在堆積上的字串</h2><p>字串常值的內容在編譯期就已知，直接寫死在執行檔裡，所以又快又有效率，但也因此不可變。需要接收使用者輸入、或內容會增長的文字，就要用 <code>String</code>，它的內容配置在堆積上。<code>String::from</code> 會向配置器要記憶體，這部分各語言大同小異；不同的是「用完怎麼還」。</p><p>沒有 GC 的語言，通常要自己判斷何時不再使用並呼叫釋放函式；官方文件列出三種常見錯誤：忘了釋放會浪費記憶體、太早釋放會讓變數失效、釋放兩次也是 bug。你需要的是剛好一次 allocate 配一次 free。</p><p>Rust 的做法是：擁有者離開作用域時自動歸還。Rust 會在右大括號處自動呼叫特殊函式 <code>drop</code>，<code>String</code> 的作者就把釋放記憶體的程式碼放在那裡。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>String 版本的作用域（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    {
+        let s = String::from(&quot;hello&quot;); // s is valid from this point forward
+
+        // do stuff with s
+    }                                  // this scope is now over, and s is no
+                                       // longer valid
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#ABB2BF">    {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">); </span><span style="color:#7F848E;font-style:italic">// s is valid from this point forward</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">        // do stuff with s</span></span>
+<span class="line"><span style="color:#ABB2BF">    }                                  </span><span style="color:#7F848E;font-style:italic">// this scope is now over, and s is no</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                                       // longer valid</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>String 可以修改，字串常值不行（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let mut s = String::from(&quot;hello&quot;);
+
+    s.push_str(&quot;, world!&quot;); // push_str() appends a literal to a String
+
+    println!(&quot;{s}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">    s</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">push_str</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">", world!"</span><span style="color:#ABB2BF">); </span><span style="color:#7F848E;font-style:italic">// push_str() appends a literal to a String</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{s}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="call info"><span class="ci">ℹ️</span><div><strong>RAII</strong><p>官方文件提到，C++ 把這種「在物件生命週期結束時釋放資源」的模式稱為 Resource Acquisition Is Initialization（RAII）；用過 RAII 的人，對 Rust 的 <code>drop</code> 不會陌生。</p></div></div><h2>移動（move）：賦值就是過戶</h2><p>整數的賦值很直覺：<code>let y = x;</code> 之後兩者都是 5，因為兩個 5 都只是 push 到堆疊的小值。但把同樣的寫法換成 <code>String</code>，行為就不同了。</p><p>一個 <code>String</code> 由三個部分組成，存在堆疊上：指向堆積內容的指標、長度（length）與容量（capacity）。<code>let s2 = s1;</code> 複製的就是這三個欄位，並沒有複製堆積上的資料。這帶來一個問題：<code>s1</code> 與 <code>s2</code> 離開作用域時都會嘗試釋放同一塊記憶體，這叫雙重釋放（double free），是會導致記憶體損毀、甚至安全漏洞的 bug。</p><p>Rust 的解法是：<code>let s2 = s1;</code> 之後，直接把 <code>s1</code> 視為失效。離開作用域時，只有 <code>s2</code> 會釋放記憶體。官方文件稱這個動作為「移動」，而不叫淺層複製，就是因為第一個變數同時被作廢。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>嘗試在移動之後使用 s1（官方 Rust Book，無法編譯）</span><button class="cb-copy" data-code="fn main() {
+    let s1 = String::from(&quot;hello&quot;);
+    let s2 = s1;
+
+    println!(&quot;{s1}, world!&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s2</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> s1</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{s1}, world!"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>編譯器輸出（官方 Rust Book）</span><button class="cb-copy" data-code="$ cargo run
+   Compiling ownership v0.1.0 (file:///projects/ownership)
+error[E0382]: borrow of moved value: `s1`
+ --> src/main.rs:5:16
+  |
+2 |     let s1 = String::from(&quot;hello&quot;);
+  |         -- move occurs because `s1` has type `String`, which does not implement the `Copy` trait
+3 |     let s2 = s1;
+  |              -- value moved here
+4 |
+5 |     println!(&quot;{s1}, world!&quot;);
+  |                ^^ value borrowed here after move
+  |
+help: consider cloning the value if the performance cost is acceptable
+  |
+3 |     let s2 = s1.clone();
+  |                ++++++++
+
+For more information about this error, try `rustc --explain E0382`.
+error: could not compile `ownership` (bin &quot;ownership&quot;) due to 1 previous error" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> run</span></span>
+<span class="line"><span style="color:#61AFEF">   Compiling</span><span style="color:#98C379"> ownership</span><span style="color:#98C379"> v0.1.0</span><span style="color:#ABB2BF"> (file:///projects/ownership)</span></span>
+<span class="line"><span style="color:#61AFEF">error[E0382]:</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> of</span><span style="color:#98C379"> moved</span><span style="color:#98C379"> value:</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">s1</span><span style="color:#98C379">`</span></span>
+<span class="line"><span style="color:#61AFEF"> --</span><span style="color:#ABB2BF">> </span><span style="color:#98C379">src/main.rs:5:16</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">2</span><span style="color:#ABB2BF"> |     </span><span style="color:#56B6C2">let</span><span style="color:#98C379"> s1</span><span style="color:#98C379"> =</span><span style="color:#98C379"> String::from</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">  |         </span><span style="color:#61AFEF">--</span><span style="color:#98C379"> move</span><span style="color:#98C379"> occurs</span><span style="color:#98C379"> because</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">s1</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> has</span><span style="color:#98C379"> type</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">String</span><span style="color:#98C379">`</span><span style="color:#61AFEF">,</span><span style="color:#98C379"> which</span><span style="color:#98C379"> does</span><span style="color:#98C379"> not</span><span style="color:#98C379"> implement</span><span style="color:#98C379"> the</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">Copy</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> trait</span></span>
+<span class="line"><span style="color:#61AFEF">3</span><span style="color:#ABB2BF"> |     </span><span style="color:#56B6C2">let</span><span style="color:#98C379"> s2</span><span style="color:#98C379"> =</span><span style="color:#98C379"> s1</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">  |              </span><span style="color:#61AFEF">--</span><span style="color:#98C379"> value</span><span style="color:#98C379"> moved</span><span style="color:#98C379"> here</span></span>
+<span class="line"><span style="color:#61AFEF">4</span><span style="color:#ABB2BF"> |</span></span>
+<span class="line"><span style="color:#61AFEF">5</span><span style="color:#ABB2BF"> |     </span><span style="color:#61AFEF">println!(</span><span style="color:#61AFEF">"{s1}, world!"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">  |                </span><span style="color:#61AFEF">^^</span><span style="color:#98C379"> value</span><span style="color:#98C379"> borrowed</span><span style="color:#98C379"> here</span><span style="color:#98C379"> after</span><span style="color:#98C379"> move</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">help:</span><span style="color:#98C379"> consider</span><span style="color:#98C379"> cloning</span><span style="color:#98C379"> the</span><span style="color:#98C379"> value</span><span style="color:#98C379"> if</span><span style="color:#98C379"> the</span><span style="color:#98C379"> performance</span><span style="color:#98C379"> cost</span><span style="color:#98C379"> is</span><span style="color:#98C379"> acceptable</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">3</span><span style="color:#ABB2BF"> |     </span><span style="color:#56B6C2">let</span><span style="color:#98C379"> s2</span><span style="color:#98C379"> =</span><span style="color:#98C379"> s1.clone</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">  |                </span><span style="color:#61AFEF">++++++++</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">For</span><span style="color:#98C379"> more</span><span style="color:#98C379"> information</span><span style="color:#98C379"> about</span><span style="color:#98C379"> this</span><span style="color:#98C379"> error,</span><span style="color:#98C379"> try</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">rustc</span><span style="color:#D19A66"> --explain</span><span style="color:#98C379"> E0382`</span><span style="color:#56B6C2">.</span></span>
+<span class="line"><span style="color:#61AFEF">error:</span><span style="color:#98C379"> could</span><span style="color:#98C379"> not</span><span style="color:#98C379"> compile</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">ownership</span><span style="color:#98C379">`</span><span style="color:#ABB2BF"> (</span><span style="color:#61AFEF">bin</span><span style="color:#98C379"> "ownership"</span><span style="color:#ABB2BF">) </span><span style="color:#61AFEF">due</span><span style="color:#98C379"> to</span><span style="color:#D19A66"> 1</span><span style="color:#98C379"> previous</span><span style="color:#98C379"> error</span></span></code></pre></div></div><p>錯誤訊息很值得讀：它指出 <code>s1</code> 的型別是 <code>String</code>、沒有實作 <code>Copy</code> trait，所以賦值時發生了移動，並建議改用 <code>s1.clone()</code>。這個設計也隱含一個保證：Rust 不會自動替你做「深層」複製，所以任何自動發生的複製，執行成本都不會太高。</p><p>與移動相對的另一種情形是重新賦值：對既有變數賦予全新的值時，Rust 會立刻對舊值呼叫 <code>drop</code> 並釋放記憶體。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>重新賦值會立刻 drop 舊值（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let mut s = String::from(&quot;hello&quot;);
+    s = String::from(&quot;ahoy&quot;);
+
+    println!(&quot;{s}, world!&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#E06C75">    s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"ahoy"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{s}, world!"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><figure class="svg-fig"><svg width="100%" height="auto" viewBox="0 0 800 484" xmlns="http://www.w3.org/2000/svg" role="img"><defs><marker id="arr-c05" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--accent)"/></marker></defs><g font-family="system-ui, sans-serif"><rect x="20" y="20" width="760" height="194" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="40" y="50" text-anchor="start" font-size="17px" fill="var(--accent)" font-weight="bold" >s1 是擁有者</text><text x="60" y="76" text-anchor="start" font-size="15px" fill="var(--muted)" >堆疊（stack）</text><g opacity="1"><rect x="60" y="84" width="150" height="116" rx="8" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/><text x="135" y="104" text-anchor="middle" font-size="16px" fill="var(--text)" font-weight="bold" >s1（擁有者）</text><line x1="60" y1="112" x2="210" y2="112" stroke="var(--border)"/><text x="135" y="131" text-anchor="middle" font-size="15px" fill="var(--text)" >指標</text><line x1="60" y1="140" x2="210" y2="140" stroke="var(--border)"/><text x="135" y="159" text-anchor="middle" font-size="15px" fill="var(--text)" >長度</text><line x1="60" y1="168" x2="210" y2="168" stroke="var(--border)"/><text x="135" y="187" text-anchor="middle" font-size="15px" fill="var(--text)" >容量</text></g><text x="480" y="100" text-anchor="start" font-size="15px" fill="var(--muted)" >堆積（heap）</text><rect x="480" y="108" width="140" height="36" rx="8" fill="var(--bg)" stroke="var(--accent2)" stroke-width="2"/><text x="550" y="132" text-anchor="middle" font-size="17px" fill="var(--text)" >hello</text><path d="M210,126 L472,126" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c05)"/><path d="M400,220 L400,262" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-c05)"/><text x="416" y="246" text-anchor="start" font-size="16px" fill="var(--text)" >let s2 = s1　→　移動</text><rect x="20" y="270" width="760" height="194" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5"/><text x="40" y="300" text-anchor="start" font-size="17px" fill="var(--accent)" font-weight="bold" >s1 失效，s2 成為擁有者</text><text x="60" y="326" text-anchor="start" font-size="15px" fill="var(--muted)" >堆疊（stack）</text><g opacity="0.55"><rect x="60" y="334" width="150" height="116" rx="8" fill="var(--bg)" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6 4"/><text x="135" y="354" text-anchor="middle" font-size="16px" fill="var(--text)" font-weight="bold" >s1（失效）</text><line x1="60" y1="362" x2="210" y2="362" stroke="var(--border)"/><text x="135" y="381" text-anchor="middle" font-size="15px" fill="var(--text)" >指標</text><line x1="60" y1="390" x2="210" y2="390" stroke="var(--border)"/><text x="135" y="409" text-anchor="middle" font-size="15px" fill="var(--text)" >長度</text><line x1="60" y1="418" x2="210" y2="418" stroke="var(--border)"/><text x="135" y="437" text-anchor="middle" font-size="15px" fill="var(--text)" >容量</text></g><g opacity="1"><rect x="250" y="334" width="150" height="116" rx="8" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/><text x="325" y="354" text-anchor="middle" font-size="16px" fill="var(--text)" font-weight="bold" >s2（擁有者）</text><line x1="250" y1="362" x2="400" y2="362" stroke="var(--border)"/><text x="325" y="381" text-anchor="middle" font-size="15px" fill="var(--text)" >指標</text><line x1="250" y1="390" x2="400" y2="390" stroke="var(--border)"/><text x="325" y="409" text-anchor="middle" font-size="15px" fill="var(--text)" >長度</text><line x1="250" y1="418" x2="400" y2="418" stroke="var(--border)"/><text x="325" y="437" text-anchor="middle" font-size="15px" fill="var(--text)" >容量</text></g><text x="480" y="350" text-anchor="start" font-size="15px" fill="var(--muted)" >堆積（heap）</text><rect x="480" y="358" width="140" height="36" rx="8" fill="var(--bg)" stroke="var(--accent2)" stroke-width="2"/><text x="550" y="382" text-anchor="middle" font-size="17px" fill="var(--text)" >hello</text><path d="M400,376 L472,376" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c05)"/><text x="480" y="424" text-anchor="start" font-size="15px" fill="var(--muted)" >離開作用域時 drop</text></g></svg><figcaption>圖 5-3：let s2 = s1 把所有權從 s1 移到 s2，s1 失效，離開作用域時只由 s2 負責 drop（依官方 Rust Book 的說明繪製）</figcaption></figure><h2>clone 與 Copy</h2><p>如果你真的想連堆積資料一起深層複製，要明確呼叫 <code>clone</code>。官方文件的說法是：看到 <code>clone</code>，就知道這裡正在執行可能很昂貴的程式碼，這是一個提醒你「這裡不一樣」的視覺訊號。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>clone：明確的深層複製（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let s1 = String::from(&quot;hello&quot;);
+    let s2 = s1.clone();
+
+    println!(&quot;s1 = {s1}, s2 = {s2}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s2</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> s1</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">clone</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"s1 = {s1}, s2 = {s2}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>那為什麼整數不用 <code>clone</code>、賦值後原變數還能用？因為大小在編譯期已知的型別整個放在堆疊上，複製很快，淺層與深層複製沒有差別，所以沒有理由讓原變數失效。這類型別會標註 <code>Copy</code> trait：賦值後不會移動，而是直接複製。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>整數實作 Copy，賦值後 x 仍然有效（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let x = 5;
+    let y = x;
+
+    println!(&quot;x = {x}, y = {y}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> x</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 5</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> y</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> x</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"x = {x}, y = {y}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>官方文件列出實作 <code>Copy</code> 的常見型別：所有整數型別（如 <code>u32</code>）、布林 <code>bool</code>、所有浮點數型別（如 <code>f64</code>）、字元 <code>char</code>，以及「成員全都實作 <code>Copy</code> 的 tuple」，例如 <code>(i32, i32)</code> 可以，<code>(i32, String)</code> 不行。另外，如果型別本身或其任一部分實作了 <code>Drop</code>，就不能再標註 <code>Copy</code>，否則編譯時會報錯。</p><h2>函式也會移動所有權</h2><p>把值傳給函式，行為與賦值相同：不是移動就是複製。傳入 <code>String</code> 會移動，傳入 <code>i32</code> 因為實作了 <code>Copy</code> 而不會。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 4-3：函式與所有權、作用域（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let s = String::from(&quot;hello&quot;);  // s comes into scope
+
+    takes_ownership(s);             // s's value moves into the function...
+                                    // ... and so is no longer valid here
+
+    let x = 5;                      // x comes into scope
+
+    makes_copy(x);                  // Because i32 implements the Copy trait,
+                                    // x does NOT move into the function,
+                                    // so it's okay to use x afterward.
+
+} // Here, x goes out of scope, then s. However, because s's value was moved,
+  // nothing special happens.
+
+fn takes_ownership(some_string: String) { // some_string comes into scope
+    println!(&quot;{some_string}&quot;);
+} // Here, some_string goes out of scope and `drop` is called. The backing
+  // memory is freed.
+
+fn makes_copy(some_integer: i32) { // some_integer comes into scope
+    println!(&quot;{some_integer}&quot;);
+} // Here, some_integer goes out of scope. Nothing special happens." data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);  </span><span style="color:#7F848E;font-style:italic">// s comes into scope</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    takes_ownership</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">);             </span><span style="color:#7F848E;font-style:italic">// s's value moves into the function...</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                                    // ... and so is no longer valid here</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> x</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 5</span><span style="color:#ABB2BF">;                      </span><span style="color:#7F848E;font-style:italic">// x comes into scope</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    makes_copy</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">);                  </span><span style="color:#7F848E;font-style:italic">// Because i32 implements the Copy trait,</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                                    // x does NOT move into the function,</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                                    // so it's okay to use x afterward.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">} </span><span style="color:#7F848E;font-style:italic">// Here, x goes out of scope, then s. However, because s's value was moved,</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">  // nothing special happens.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> takes_ownership</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">some_string</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">) { </span><span style="color:#7F848E;font-style:italic">// some_string comes into scope</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{some_string}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">} </span><span style="color:#7F848E;font-style:italic">// Here, some_string goes out of scope and `drop` is called. The backing</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">  // memory is freed.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> makes_copy</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">some_integer</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF">) { </span><span style="color:#7F848E;font-style:italic">// some_integer comes into scope</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"{some_integer}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">} </span><span style="color:#7F848E;font-style:italic">// Here, some_integer goes out of scope. Nothing special happens.</span></span></code></pre></div></div><p>回傳值同樣可以轉移所有權。函式把區域變數當作回傳值交出去，所有權就「搬出」給呼叫端。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 4-4：轉移回傳值的所有權（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let s1 = gives_ownership();        // gives_ownership moves its return
+                                       // value into s1
+
+    let s2 = String::from(&quot;hello&quot;);    // s2 comes into scope
+
+    let s3 = takes_and_gives_back(s2); // s2 is moved into
+                                       // takes_and_gives_back, which also
+                                       // moves its return value into s3
+} // Here, s3 goes out of scope and is dropped. s2 was moved, so nothing
+  // happens. s1 goes out of scope and is dropped.
+
+fn gives_ownership() -> String {       // gives_ownership will move its
+                                       // return value into the function
+                                       // that calls it
+
+    let some_string = String::from(&quot;yours&quot;); // some_string comes into scope
+
+    some_string                        // some_string is returned and
+                                       // moves out to the calling
+                                       // function
+}
+
+// This function takes a String and returns a String.
+fn takes_and_gives_back(a_string: String) -> String {
+    // a_string comes into
+    // scope
+
+    a_string  // a_string is returned and moves out to the calling function
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s1</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> gives_ownership</span><span style="color:#ABB2BF">();        </span><span style="color:#7F848E;font-style:italic">// gives_ownership moves its return</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                                       // value into s1</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s2</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);    </span><span style="color:#7F848E;font-style:italic">// s2 comes into scope</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s3</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> takes_and_gives_back</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">s2</span><span style="color:#ABB2BF">); </span><span style="color:#7F848E;font-style:italic">// s2 is moved into</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                                       // takes_and_gives_back, which also</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                                       // moves its return value into s3</span></span>
+<span class="line"><span style="color:#ABB2BF">} </span><span style="color:#7F848E;font-style:italic">// Here, s3 goes out of scope and is dropped. s2 was moved, so nothing</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">  // happens. s1 goes out of scope and is dropped.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> gives_ownership</span><span style="color:#ABB2BF">() -> </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF"> {       </span><span style="color:#7F848E;font-style:italic">// gives_ownership will move its</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                                       // return value into the function</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                                       // that calls it</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> some_string</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"yours"</span><span style="color:#ABB2BF">); </span><span style="color:#7F848E;font-style:italic">// some_string comes into scope</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">    some_string</span><span style="color:#7F848E;font-style:italic">                        // some_string is returned and</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                                       // moves out to the calling</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                                       // function</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// This function takes a String and returns a String.</span></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> takes_and_gives_back</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">a_string</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // a_string comes into</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // scope</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">    a_string</span><span style="color:#7F848E;font-style:italic">  // a_string is returned and moves out to the calling function</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>規律每次都一樣：賦值給另一個變數就是移動；含有堆積資料的變數離開作用域時，除非所有權已經移給別人，否則由 <code>drop</code> 清理。</p><p>可是每個函式都「收進來再還回去」實在太囉嗦。想要在函式裡用完還能繼續用，只能用 tuple 把參數連同結果一起回傳：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 4-5：把參數的所有權還回去（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let s1 = String::from(&quot;hello&quot;);
+
+    let (s2, len) = calculate_length(s1);
+
+    println!(&quot;The length of '{s2}' is {len}.&quot;);
+}
+
+fn calculate_length(s: String) -> (String, usize) {
+    let length = s.len(); // len() returns the length of a String
+
+    (s, length)
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> s1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#ABB2BF"> (</span><span style="color:#E06C75">s2</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">len</span><span style="color:#ABB2BF">) </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> calculate_length</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">s1</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The length of '{s2}' is {len}."</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> calculate_length</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">) -> (</span><span style="color:#E5C07B">String</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">usize</span><span style="color:#ABB2BF">) {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> length</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">(); </span><span style="color:#7F848E;font-style:italic">// len() returns the length of a String</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    (</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">length</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>官方文件的評語是：對一個應該很常見的需求來說，這樣做儀式感太重、工作太多。Rust 的解法是下一章的主角：參考（reference）。</p><div class="call tip"><span class="ci">💡</span><div><strong>本章重點回顧</strong><p>所有權的目標是管理堆積資料：一個值一個擁有者，擁有者離開作用域就 <code>drop</code>。賦值與傳參預設是「移動」，需要深層複製要明講 <code>clone</code>，只存在堆疊的簡單型別則因 <code>Copy</code> 自動複製。</p></div></div><figure class="svg-fig"><img src="/rust/img/ch05/03-flowchart-move-or-copy-decision.png" alt="賦值或傳參時，依型別是否實作 Copy 判斷移動或複製的流程" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 5-4：賦值與傳參時的判斷流程：型別有沒有實作 Copy，決定原變數還能不能用</figcaption></figure><h2>下一章預告</h2><p>第 6 章會介紹借用與參考：用 <code>&amp;</code> 與 <code>&amp;mut</code> 在不拿走所有權的情況下使用資料，以及編譯器為此訂下的「一寫或多讀」規則。</p></div><nav class="cnav" data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" class="prev" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>← 上一章</span><span class="nt" data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a><a href="/rust/ch06-borrowing" class="next" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>下一章 →</span><span class="nt" data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></nav></main></div><script>
+    // Theme
+    const html = document.documentElement;
+    const tt = document.getElementById('tt');
+    const isun = document.getElementById('isun');
+    const imoon = document.getElementById('imoon');
+    function syncIcons() {
+      const dk = html.classList.contains('dark');
+      isun.style.display = dk ? 'block' : 'none';
+      imoon.style.display = dk ? 'none' : 'block';
+    }
+    syncIcons();
+    tt?.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('cc-theme', html.classList.contains('dark') ? 'dark' : 'light');
+      syncIcons();
+    });
+
+    // Progress
+    const pb = document.getElementById('pb');
+    window.addEventListener('scroll', () => {
+      const t = document.documentElement.scrollHeight - window.innerHeight;
+      pb.style.width = t > 0 ? `${(window.scrollY / t) * 100}%` : '0%';
+    }, { passive: true });
+
+    // Sidebar part toggles
+    document.querySelectorAll('.pt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pid;
+        const list = document.querySelector(`[data-pl="${id}"]`);
+        btn.classList.toggle('open');
+        list?.classList.toggle('closed');
+      });
+    });
+
+    // Mobile menu
+    const sb = document.getElementById('sb');
+    const ov = document.getElementById('ov');
+    const mb = document.getElementById('mbtn');
+    const open = () => { sb.classList.add('open'); ov.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close = () => { sb.classList.remove('open'); ov.classList.remove('open'); document.body.style.overflow=''; };
+    mb?.addEventListener('click', open);
+    ov?.addEventListener('click', close);
+  </script></body></html>

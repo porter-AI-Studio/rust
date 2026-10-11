@@ -1,0 +1,413 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-ccykbmgk><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>無畏並行：執行緒、通道與共享狀態 | Rust 實戰指南</title><meta name="description" content="Rust 標準執行緒與 JoinHandle、move 閉包、mpsc 通道、Mutex 與 Arc 共享狀態，以及 Send／Sync 的執行緒安全界線。"><link rel="icon" href="/rust/favicon.svg" type="image/svg+xml"><script>
+    (function () {
+      const s = localStorage.getItem('cc-theme');
+      const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark');
+    })();
+  </script><link rel="stylesheet" href="/rust/_astro/DocsLayout.9CQhNdRI.css"><style>.cb-wrap[data-astro-cid-c6nuo4je]{margin-bottom:1.25rem}.cb-bar[data-astro-cid-c6nuo4je]{background:#1a1a2e;border:1px solid #ffffff14;border-bottom-color:#ffffff0d;border-radius:6px 6px 0 0;justify-content:space-between;align-items:center;min-height:1.8rem;padding:.18rem .5rem .18rem .75rem;display:flex}.cb-label[data-astro-cid-c6nuo4je]{color:#a6adc8;letter-spacing:.04em;font-family:Fira Code,Cascadia Code,Consolas,monospace;font-size:.73rem}.cb-inner[data-astro-cid-c6nuo4je] pre{border-radius:0 0 8px 8px!important;margin-bottom:0!important}.cb-copy[data-astro-cid-c6nuo4je]{color:#888;cursor:pointer;background:#ffffff14;border:1px solid #ffffff1f;border-radius:4px;flex-shrink:0;padding:.15rem .55rem;font-size:.7rem;transition:all .15s}.cb-copy[data-astro-cid-c6nuo4je]:hover{color:#fff;background:#ffffff2e}.cb-copy[data-astro-cid-c6nuo4je].copied{color:#4ec9b0;border-color:#4ec9b0}
+</style></head><body data-astro-cid-ccykbmgk><div id="pb" data-astro-cid-ccykbmgk></div><header data-astro-cid-ccykbmgk><div class="hi" data-astro-cid-ccykbmgk><div class="hl" data-astro-cid-ccykbmgk><button id="mbtn" class="ibtn" aria-label="選單" data-astro-cid-ccykbmgk><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" data-astro-cid-ccykbmgk></path></svg></button><a href="/rust/" class="site-name" data-astro-cid-ccykbmgk><span class="logo" data-astro-cid-ccykbmgk>RS</span>&nbsp;&nbsp;Rust 實戰指南</a></div><div class="hr" data-astro-cid-ccykbmgk><button id="tt" class="ibtn" aria-label="切換主題" data-astro-cid-ccykbmgk><svg id="isun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" data-astro-cid-ccykbmgk></path></svg><svg id="imoon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" data-astro-cid-ccykbmgk></path></svg></button></div></div></header><div id="layout" data-astro-cid-ccykbmgk><nav id="sb" data-astro-cid-ccykbmgk><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="0" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 0：前言</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="0" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/preface" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>0.</span><span data-astro-cid-ccykbmgk>前言</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="1" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 1：認識 Rust</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="1" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>1.</span><span data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch02-setup-cargo" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>2.</span><span data-astro-cid-ccykbmgk>安裝與 Cargo：第一個專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>3.</span><span data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>4.</span><span data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="2" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 2：所有權：Rust 的核心</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="2" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>5.</span><span data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>6.</span><span data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch07-lifetimes" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>7.</span><span data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>8.</span><span data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="3" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 3：型別系統與錯誤處理</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="3" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>9.</span><span data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>10.</span><span data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>11.</span><span data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="4" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 4：並行與非同步</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="4" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch12-concurrency" class="active" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>12.</span><span data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>13.</span><span data-astro-cid-ccykbmgk>async/await 基礎</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>14.</span><span data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="5" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 5：工程實務與生態</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="5" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch15-idioms-and-project" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>15.</span><span data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch16-systems-linux-embedded" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>16.</span><span data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch17-reality-check" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>17.</span><span data-astro-cid-ccykbmgk>現實檢查：批評、代價與重寫案例</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="6" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 6：附錄</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="6" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/glossary" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>18.</span><span data-astro-cid-ccykbmgk>名詞解釋</span></a></li></ul></div></nav><div id="ov" data-astro-cid-ccykbmgk></div><main data-astro-cid-ccykbmgk><div class="cb" data-astro-cid-ccykbmgk><span class="clabel">第 12 章 · Part 4：並行與非同步</span><h1>無畏並行：執行緒、通道與共享狀態</h1><p class="cdesc">所有權與型別系統不只管記憶體，也把大多數並行錯誤擋在編譯期。</p><p>Rust 官方文件（The Rust Programming Language，下稱 Rust Book）的說法是：Rust 團隊起初認為「確保記憶體安全」與「防止並行問題」是兩個需要不同方法的挑戰，後來發現所有權與型別系統能同時解決這兩類問題。結果是許多並行錯誤在 Rust 變成編譯期錯誤而非執行期錯誤，這就是「無畏並行」（fearless concurrency）。本章依序看三件事：建立執行緒、用通道傳訊息、用 Mutex 共享狀態，最後談 <code>Send</code> 與 <code>Sync</code>。除特別標明外，範例皆取自 Rust Book。</p><h2>執行緒：spawn 與 join</h2><p>多執行緒能提升效能，但也帶來複雜度。Rust Book 列出幾類常見問題：競態條件（race condition，執行緒以不一致的順序存取資料）、死結（deadlock，兩個執行緒互相等待）、以及只在特定情況發生、難以重現的 bug。Rust 標準函式庫採 1:1 模型，一個語言層級的執行緒對應一個作業系統執行緒；也有 crate 實作其他模型（官方並指出非同步是另一種並行做法，下一章會談）。</p><p><code>thread::spawn</code> 接收一個閉包，在新執行緒執行。主執行緒結束時，所有被產生的執行緒會被強制關閉，不管它們有沒有跑完。要等它們完成，要保存 <code>spawn</code> 回傳的 <code>JoinHandle</code>，並呼叫 <code>join</code>，它會阻塞目前的執行緒直到對方結束：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 16-2：用 join 等待執行緒</span><button class="cb-copy" data-code="use std::thread;
+use std::time::Duration;
+
+fn main() {
+    let handle = thread::spawn(|| {
+        for i in 1..10 {
+            println!(&quot;hi number {i} from the spawned thread!&quot;);
+            thread::sleep(Duration::from_millis(1));
+        }
+    });
+
+    for i in 1..5 {
+        println!(&quot;hi number {i} from the main thread!&quot;);
+        thread::sleep(Duration::from_millis(1));
+    }
+
+    handle.join().unwrap();
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::thread;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">time</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> handle</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">||</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        for</span><span style="color:#E06C75"> i</span><span style="color:#C678DD"> in</span><span style="color:#D19A66"> 1</span><span style="color:#ABB2BF">..</span><span style="color:#D19A66">10</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">            println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hi number {i} from the spawned thread!"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#E5C07B">            thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">sleep</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_millis</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#ABB2BF">    });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    for</span><span style="color:#E06C75"> i</span><span style="color:#C678DD"> in</span><span style="color:#D19A66"> 1</span><span style="color:#ABB2BF">..</span><span style="color:#D19A66">5</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hi number {i} from the main thread!"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#E5C07B">        thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">sleep</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_millis</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">    handle</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">join</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><script type="module">document.querySelectorAll(`.cb-copy`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.code;t&&navigator.clipboard.writeText(t).then(()=>{e.textContent=`已複製!`,e.classList.add(`copied`),setTimeout(()=>{e.textContent=`複製`,e.classList.remove(`copied`)},2e3)})})});</script><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：輸出（每次執行順序可能不同）</span><button class="cb-copy" data-code="hi number 1 from the main thread!
+hi number 2 from the main thread!
+hi number 1 from the spawned thread!
+hi number 3 from the main thread!
+hi number 2 from the spawned thread!
+hi number 4 from the main thread!
+hi number 3 from the spawned thread!
+hi number 4 from the spawned thread!
+hi number 5 from the spawned thread!
+hi number 6 from the spawned thread!
+hi number 7 from the spawned thread!
+hi number 8 from the spawned thread!
+hi number 9 from the spawned thread!" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>hi number 1 from the main thread!</span></span>
+<span class="line"><span>hi number 2 from the main thread!</span></span>
+<span class="line"><span>hi number 1 from the spawned thread!</span></span>
+<span class="line"><span>hi number 3 from the main thread!</span></span>
+<span class="line"><span>hi number 2 from the spawned thread!</span></span>
+<span class="line"><span>hi number 4 from the main thread!</span></span>
+<span class="line"><span>hi number 3 from the spawned thread!</span></span>
+<span class="line"><span>hi number 4 from the spawned thread!</span></span>
+<span class="line"><span>hi number 5 from the spawned thread!</span></span>
+<span class="line"><span>hi number 6 from the spawned thread!</span></span>
+<span class="line"><span>hi number 7 from the spawned thread!</span></span>
+<span class="line"><span>hi number 8 from the spawned thread!</span></span>
+<span class="line"><span>hi number 9 from the spawned thread!</span></span></code></pre></div></div><p>官方還示範：把 <code>handle.join().unwrap()</code> 移到主執行緒的 <code>for</code> 迴圈之前，輸出就不再交錯，因為主執行緒會先等衍生執行緒跑完。<code>join</code> 放的位置會影響執行緒是否真的同時執行。</p><h3>move 閉包</h3><p>想在衍生執行緒中使用主執行緒的資料，閉包預設只會借用，而 Rust 無法得知執行緒會活多久，所以編譯器拒絕下面的程式：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 16-3：閉包借用 v（無法編譯）</span><button class="cb-copy" data-code="use std::thread;
+
+fn main() {
+    let v = vec![1, 2, 3];
+
+    let handle = thread::spawn(|| {
+        println!(&quot;Here's a vector: {v:?}&quot;);
+    });
+
+    handle.join().unwrap();
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::thread;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> v</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> handle</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">||</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Here's a vector: {v:?}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">    handle</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">join</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：編譯器錯誤（節錄）</span><button class="cb-copy" data-code="error[E0373]: closure may outlive the current function, but it borrows `v`, which is owned by the current function
+ --> src/main.rs:6:32
+  |
+6 |     let handle = thread::spawn(|| {
+  |                                ^^ may outlive borrowed value `v`
+7 |         println!(&quot;Here's a vector: {v:?}&quot;);
+  |                                     - `v` is borrowed here
+  |
+help: to force the closure to take ownership of `v` (and any other referenced variables), use the `move` keyword
+  |
+6 |     let handle = thread::spawn(move || {
+  |                                ++++" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>error[E0373]: closure may outlive the current function, but it borrows `v`, which is owned by the current function</span></span>
+<span class="line"><span> --> src/main.rs:6:32</span></span>
+<span class="line"><span>  |</span></span>
+<span class="line"><span>6 |     let handle = thread::spawn(|| {</span></span>
+<span class="line"><span>  |                                ^^ may outlive borrowed value `v`</span></span>
+<span class="line"><span>7 |         println!("Here's a vector: {v:?}");</span></span>
+<span class="line"><span>  |                                     - `v` is borrowed here</span></span>
+<span class="line"><span>  |</span></span>
+<span class="line"><span>help: to force the closure to take ownership of `v` (and any other referenced variables), use the `move` keyword</span></span>
+<span class="line"><span>  |</span></span>
+<span class="line"><span>6 |     let handle = thread::spawn(move || {</span></span>
+<span class="line"><span>  |                                ++++</span></span></code></pre></div></div><p>照提示加上 <code>move</code>，讓閉包取得 <code>v</code> 的所有權：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 16-5：move 閉包</span><button class="cb-copy" data-code="use std::thread;
+
+fn main() {
+    let v = vec![1, 2, 3];
+
+    let handle = thread::spawn(move || {
+        println!(&quot;Here's a vector: {v:?}&quot;);
+    });
+
+    handle.join().unwrap();
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::thread;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> v</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">2</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">3</span><span style="color:#ABB2BF">];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> handle</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">move</span><span style="color:#56B6C2"> ||</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Here's a vector: {v:?}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">    handle</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">join</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>官方還有一個對照：若在衍生執行緒之後，主執行緒呼叫 <code>drop(v)</code>，就算用了 <code>move</code> 也會得到 <code>E0382</code>（使用已移動的值），因為所有權已經交給閉包。所有權規則在這裡擋下了潛在的使用已釋放資料問題。</p><figure class="svg-fig"><img src="/rust/img/ch12/01-flowchart-spawn-and-join-timeline.png" alt="spawn 與 join 的執行時序與 move 閉包" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 12-1：執行緒的 spawn 與 join 時序，以及 move 閉包把所有權交給新執行緒</figcaption></figure><h2>通道：用訊息傳遞資料</h2><p>Rust Book 引用 Go 語言文件的口號：不要透過共享記憶體來通訊，而要透過通訊來共享記憶體。標準函式庫提供的通道（channel）有發送端（transmitter，<code>tx</code>）與接收端（receiver，<code>rx</code>）兩半。<code>mpsc</code> 是 multiple producer, single consumer（多個生產者、單一消費者）的縮寫。<code>recv</code> 會阻塞直到收到值；<code>try_recv</code> 不阻塞，立刻回傳 <code>Result</code>。下例由衍生執行緒送出 <code>"hi"</code>，主執行緒印出 <code>Got: hi</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 16-8：基本通道</span><button class="cb-copy" data-code="use std::sync::mpsc;
+use std::thread;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        let val = String::from(&quot;hi&quot;);
+        tx.send(val).unwrap();
+    });
+
+    let received = rx.recv().unwrap();
+    println!(&quot;Got: {received}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">sync</span><span style="color:#ABB2BF">::mpsc;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::thread;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#ABB2BF"> (</span><span style="color:#E06C75">tx</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">rx</span><span style="color:#ABB2BF">) </span><span style="color:#56B6C2">=</span><span style="color:#E5C07B"> mpsc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">channel</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E5C07B">    thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">move</span><span style="color:#56B6C2"> ||</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> val</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hi"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#E06C75">        tx</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">send</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">val</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">    });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> received</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> rx</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">recv</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Got: {received}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>所有權在這裡扮演關鍵角色。<code>send</code> 會取得參數的所有權，所以送出後再使用該值，編譯器直接報錯（官方輸出為 <code>E0382</code>）。如果允許，接收端執行緒可能在你繼續使用之前就修改或釋放它：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 16-9：送出後使用 val（無法編譯）</span><button class="cb-copy" data-code="use std::sync::mpsc;
+use std::thread;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        let val = String::from(&quot;hi&quot;);
+        tx.send(val).unwrap();
+        println!(&quot;val is {val}&quot;);
+    });
+
+    let received = rx.recv().unwrap();
+    println!(&quot;Got: {received}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">sync</span><span style="color:#ABB2BF">::mpsc;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::thread;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#ABB2BF"> (</span><span style="color:#E06C75">tx</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">rx</span><span style="color:#ABB2BF">) </span><span style="color:#56B6C2">=</span><span style="color:#E5C07B"> mpsc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">channel</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E5C07B">    thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">move</span><span style="color:#56B6C2"> ||</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> val</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hi"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#E06C75">        tx</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">send</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">val</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"val is {val}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> received</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> rx</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">recv</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Got: {received}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>要有多個生產者，就對發送端 <code>clone</code>，每個執行緒各拿一個。接收端可以直接當迭代器 <code>for received in rx</code>，通道關閉時迴圈結束。多個發送者的訊息到達順序取決於系統排程，官方明說每次執行順序可能不同：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 16-11：多個生產者</span><button class="cb-copy" data-code="use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+    // --snip--
+    let (tx, rx) = mpsc::channel();
+
+    let tx1 = tx.clone();
+    thread::spawn(move || {
+        let vals = vec![
+            String::from(&quot;hi&quot;),
+            String::from(&quot;from&quot;),
+            String::from(&quot;the&quot;),
+            String::from(&quot;thread&quot;),
+        ];
+
+        for val in vals {
+            tx1.send(val).unwrap();
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+
+    thread::spawn(move || {
+        let vals = vec![
+            String::from(&quot;more&quot;),
+            String::from(&quot;messages&quot;),
+            String::from(&quot;for&quot;),
+            String::from(&quot;you&quot;),
+        ];
+
+        for val in vals {
+            tx.send(val).unwrap();
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+
+    for received in rx {
+        println!(&quot;Got: {received}&quot;);
+    }
+    // --snip--
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">sync</span><span style="color:#ABB2BF">::mpsc;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::thread;</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">time</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // --snip--</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#ABB2BF"> (</span><span style="color:#E06C75">tx</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">rx</span><span style="color:#ABB2BF">) </span><span style="color:#56B6C2">=</span><span style="color:#E5C07B"> mpsc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">channel</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> tx1</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> tx</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">clone</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#E5C07B">    thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">move</span><span style="color:#56B6C2"> ||</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> vals</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[</span></span>
+<span class="line"><span style="color:#E5C07B">            String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hi"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">            String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"from"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">            String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"the"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">            String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"thread"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">        ];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        for</span><span style="color:#E06C75"> val</span><span style="color:#C678DD"> in</span><span style="color:#E06C75"> vals</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">            tx1</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">send</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">val</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#E5C07B">            thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">sleep</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_secs</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#ABB2BF">    });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E5C07B">    thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">move</span><span style="color:#56B6C2"> ||</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> vals</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[</span></span>
+<span class="line"><span style="color:#E5C07B">            String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"more"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">            String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"messages"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">            String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"for"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#E5C07B">            String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"you"</span><span style="color:#ABB2BF">),</span></span>
+<span class="line"><span style="color:#ABB2BF">        ];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        for</span><span style="color:#E06C75"> val</span><span style="color:#C678DD"> in</span><span style="color:#E06C75"> vals</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">            tx</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">send</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">val</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#E5C07B">            thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">sleep</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">Duration</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from_secs</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">1</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#ABB2BF">    });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    for</span><span style="color:#E06C75"> received</span><span style="color:#C678DD"> in</span><span style="color:#E06C75"> rx</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Got: {received}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // --snip--</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><figure class="svg-fig"><img src="/rust/img/ch12/02-comparison-channel-vs-shared-memory.png" alt="通道與共享記憶體兩種並行哲學的對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 12-2：通道（傳遞訊息）與共享記憶體的哲學與所有權類比</figcaption></figure><h2>共享狀態：Mutex 與 Arc</h2><p>通道類似單一所有權，值送出就不該再用；共享記憶體則像多重所有權，多個執行緒同時存取同一份資料。Mutex（mutual exclusion，互斥鎖）一次只允許一個執行緒存取資料。使用規則有兩條：用資料前必須先取得鎖；用完必須解鎖。Rust Book 說明，由於型別系統與所有權規則，你不會在「上鎖與解鎖」上出錯。</p><p><code>lock</code> 回傳包在 <code>LockResult</code> 中的 <code>MutexGuard</code>，它實作 <code>Deref</code> 指向內部資料，並在離開作用域時自動解鎖。若持有鎖的另一個執行緒 panic，<code>lock</code> 會失敗，因此範例用 <code>unwrap</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 16-12：單執行緒下的 Mutex</span><button class="cb-copy" data-code="use std::sync::Mutex;
+
+fn main() {
+    let m = Mutex::new(5);
+
+    {
+        let mut num = m.lock().unwrap();
+        *num = 6;
+    }
+
+    println!(&quot;m = {m:?}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">sync</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Mutex</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> m</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Mutex</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">5</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> num</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> m</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">lock</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">        *</span><span style="color:#E06C75">num</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 6</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"m = {m:?}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h3>從 Rc 到 Arc</h3><p>要讓十個執行緒各把計數器加一，把 <code>Mutex</code> 的所有權 move 進迴圈中的每個閉包是不行的，編譯器回報 <code>counter</code> 在上一輪已被移動。上一章的 <code>Rc&lt;T&gt;</code> 能提供多重所有權，但換成 <code>Rc&lt;Mutex&lt;i32&gt;&gt;</code> 後會得到新的錯誤：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book：Rc 無法跨執行緒（節錄）</span><button class="cb-copy" data-code="error[E0277]: `Rc<std::sync::Mutex<i32>>` cannot be sent between threads safely
+  --> src/main.rs:11:36
+   = help: within `{closure@src/main.rs:11:36: 11:43}`, the trait `Send` is not implemented for `Rc<std::sync::Mutex<i32>>`" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="text"><code><span class="line"><span>error[E0277]: `Rc&#x3C;std::sync::Mutex&#x3C;i32>>` cannot be sent between threads safely</span></span>
+<span class="line"><span>  --> src/main.rs:11:36</span></span>
+<span class="line"><span>   = help: within `{closure@src/main.rs:11:36: 11:43}`, the trait `Send` is not implemented for `Rc&#x3C;std::sync::Mutex&#x3C;i32>>`</span></span></code></pre></div></div><p>原因是 <code>Rc&lt;T&gt;</code> 管理參考計數時沒有使用並行原語，計數可能被其他執行緒打斷而算錯，導致記憶體洩漏或資料被提早釋放。解法是 <code>Arc&lt;T&gt;</code>（atomically reference-counted，原子參考計數），它與 <code>Rc</code> 的 API 相同，但以原子操作維護計數。為什麼不是所有型別預設就用 <code>Arc</code>？官方答案是執行緒安全有效能代價，只在需要時才付出。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Rust Book Listing 16-15：Arc 與 Mutex 搭配</span><button class="cb-copy" data-code="use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    let counter = Arc::new(Mutex::new(0));
+    let mut handles = vec![];
+
+    for _ in 0..10 {
+        let counter = Arc::clone(&amp;counter);
+        let handle = thread::spawn(move || {
+            let mut num = counter.lock().unwrap();
+
+            *num += 1;
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    println!(&quot;Result: {}&quot;, *counter.lock().unwrap());
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">sync</span><span style="color:#ABB2BF">::{</span><span style="color:#E5C07B">Arc</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">Mutex</span><span style="color:#ABB2BF">};</span></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::thread;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> counter</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Arc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B">Mutex</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">new</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">0</span><span style="color:#ABB2BF">));</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> handles</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> vec!</span><span style="color:#ABB2BF">[];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    for</span><span style="color:#E06C75"> _</span><span style="color:#C678DD"> in</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF">..</span><span style="color:#D19A66">10</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> counter</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> Arc</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">clone</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">counter</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> handle</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> thread</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">spawn</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">move</span><span style="color:#56B6C2"> ||</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">            let</span><span style="color:#C678DD"> mut</span><span style="color:#E06C75"> num</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> counter</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">lock</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">            *</span><span style="color:#E06C75">num</span><span style="color:#56B6C2"> +=</span><span style="color:#D19A66"> 1</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">        });</span></span>
+<span class="line"><span style="color:#E06C75">        handles</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">push</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">handle</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    for</span><span style="color:#E06C75"> handle</span><span style="color:#C678DD"> in</span><span style="color:#E06C75"> handles</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">        handle</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">join</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Result: {}"</span><span style="color:#ABB2BF">, *</span><span style="color:#E06C75">counter</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">lock</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">());</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>此程式輸出 <code>Result: 10</code>。官方補充：做簡單數值運算時，標準函式庫 <code>std::sync::atomic</code> 有比 <code>Mutex</code> 更簡單的型別。另外，<code>Mutex</code> 和 <code>RefCell</code> 一樣提供內部可變性（interior mutability）：<code>Arc&lt;Mutex&lt;T&gt;&gt;</code> 之於多執行緒，就像 <code>Rc&lt;RefCell&lt;T&gt;&gt;</code> 之於單執行緒。</p><figure class="svg-fig"><svg width="100%" height="auto" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="跨執行緒共享資料的三種做法與 Send／Sync 把關">
+<defs>
+<marker id="arr-c12" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--muted)" /></marker>
+</defs>
+<g font-family="system-ui, sans-serif">
+<rect x="250" y="10" width="300" height="44" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="400" y="38" text-anchor="middle" font-size="17px" fill="var(--text)">thread::spawn + join</text>
+<path d="M 400 54 L 400 76" fill="none" stroke="var(--muted)" stroke-width="1.5" />
+<path d="M 140 76 L 660 76" fill="none" stroke="var(--muted)" stroke-width="1.5" />
+<path d="M 140 76 L 140 92" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr-c12)" />
+<path d="M 400 76 L 400 92" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr-c12)" />
+<path d="M 660 76 L 660 92" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr-c12)" />
+<rect x="20" y="100" width="240" height="130" rx="8" fill="var(--bg2)" stroke="var(--border)" stroke-width="1.5" />
+<text x="140" y="128" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">move 閉包</text>
+<text x="140" y="160" text-anchor="middle" font-size="15px" fill="var(--text)">取得所有權</text>
+<text x="140" y="186" text-anchor="middle" font-size="15px" fill="var(--text)">資料搬進新執行緒</text>
+<text x="140" y="212" text-anchor="middle" font-size="15px" fill="var(--text)">不加 move 編譯器拒絕</text>
+<rect x="280" y="100" width="240" height="130" rx="8" fill="var(--bg2)" stroke="var(--accent)" stroke-width="2" />
+<text x="400" y="128" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">通道 mpsc</text>
+<text x="400" y="160" text-anchor="middle" font-size="15px" fill="var(--text)">tx 發送端，rx 接收端</text>
+<text x="400" y="186" text-anchor="middle" font-size="15px" fill="var(--text)">send 取得所有權</text>
+<text x="400" y="212" text-anchor="middle" font-size="15px" fill="var(--text)">送出後不能再用</text>
+<rect x="540" y="100" width="240" height="130" rx="8" fill="var(--bg2)" stroke="var(--accent2)" stroke-width="2" />
+<text x="660" y="128" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">Arc&lt;Mutex&lt;T&gt;&gt;</text>
+<text x="660" y="160" text-anchor="middle" font-size="15px" fill="var(--text)">Arc：原子參考計數</text>
+<text x="660" y="186" text-anchor="middle" font-size="15px" fill="var(--text)">Mutex：一次一個執行緒</text>
+<text x="660" y="212" text-anchor="middle" font-size="15px" fill="var(--text)">離開作用域自動解鎖</text>
+<path d="M 140 230 L 140 262" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4" marker-end="url(#arr-c12)" />
+<path d="M 400 230 L 400 262" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4" marker-end="url(#arr-c12)" />
+<path d="M 660 230 L 660 262" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4" marker-end="url(#arr-c12)" />
+<rect x="20" y="270" width="760" height="118" rx="8" fill="var(--bg2)" stroke="var(--accent)" stroke-width="2" />
+<text x="400" y="298" text-anchor="middle" font-size="17px" font-weight="700" fill="var(--text)">Send 與 Sync：編譯期把關</text>
+<text x="400" y="330" text-anchor="middle" font-size="15px" fill="var(--text)">Rc&lt;T&gt; 不是 Send，被編譯器擋下；Arc&lt;T&gt; 是</text>
+<text x="400" y="356" text-anchor="middle" font-size="15px" fill="var(--text)">Mutex&lt;T&gt; 是 Sync；RefCell&lt;T&gt; 不是</text>
+<text x="400" y="378" text-anchor="middle" font-size="15px" fill="var(--muted)">死結這類邏輯錯誤，編譯器擋不住</text>
+</g>
+</svg><figcaption>圖 12-3：跨執行緒共享資料的三種做法，以及 Send／Sync 的編譯期把關</figcaption></figure><div class="call warn"><span class="ci">⚠️</span><div><strong>編譯器擋不住的邏輯錯誤</strong><p>Rust Book 提醒：<code>Rc&lt;T&gt;</code> 有參考循環造成記憶體洩漏的風險，同樣地，<code>Mutex&lt;T&gt;</code> 有死結風險：兩個執行緒各持有一把鎖，並互相等待對方的鎖。Rust 無法在編譯期替你防止死結。</p></div></div><h2>Send 與 Sync</h2><p>上面 <code>Rc</code> 的錯誤訊息提到 <code>Send</code> trait。這兩個 marker trait 是 Rust 並行保證的基礎（以下取自官方文件 doc.rust-lang.org/book/ch16-04-extensible-concurrency-sync-and-send.html，本章主要素材未涵蓋此節，為上網補充）：</p><ul><li><code>Send</code>：此型別的值的所有權可以在執行緒之間轉移。<code>Rc&lt;T&gt;</code> 不是 <code>Send</code>，因為複製後交給另一個執行緒，兩邊可能同時更新參考計數；<code>Arc&lt;T&gt;</code> 是。</li><li><code>Sync</code>：此型別可以安全地被多個執行緒參考（等價於 <code>&amp;T</code> 是 <code>Send</code>）。<code>Mutex&lt;T&gt;</code> 是 <code>Sync</code>；<code>RefCell&lt;T&gt;</code> 與 <code>Cell&lt;T&gt;</code> 不是，因為執行期借用檢查不是執行緒安全的。</li><li>它們是自動推導的：完全由 <code>Send</code> 型別組成的型別也自動是 <code>Send</code>。它們沒有方法，只用來強制並行相關的不變式。手動實作它們需要 <code>unsafe</code>（上一章的「實作 unsafe trait」就是這種情況）。</li></ul><div class="call info"><span class="ci">ℹ️</span><div><strong>本章未涵蓋</strong><p>課程大綱列出的 scoped threads、Rayon 資料並行、Crossbeam 進階原語與無鎖資料結構，本章素材（Rust Book 第 16 章相關小節與一篇簡體中文章節介紹）皆未提供，因此不在此展開；需要時請參考各自的官方文件（std::thread::scope、docs.rs 上的 rayon 與 crossbeam）。</p></div></div><figure class="svg-fig"><img src="/rust/img/ch12/03-comparison-compile-time-vs-logic-errors.png" alt="編譯器能擋下與仍需自己負責的並行問題對照" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 12-4：編譯器擋得下的並行問題，與仍要自己負責的邏輯錯誤</figcaption></figure><h2>小結</h2><ul><li><code>thread::spawn</code> + <code>join</code> 建立並等待執行緒；跨執行緒使用資料要 <code>move</code>。</li><li>通道傳遞所有權，送出後不能再用；<code>tx.clone()</code> 可做多生產者。</li><li><code>Arc&lt;Mutex&lt;T&gt;&gt;</code> 是共享可變狀態的標準組合；<code>Rc</code> 因不是 <code>Send</code> 被編譯器擋下。</li><li>編譯器能擋資料競爭，但擋不了死結等邏輯錯誤。</li></ul><p>執行緒是 OS 層級的並行。下一章「async/await 基礎」介紹另一種並行模型：在少數執行緒上排程大量可暫停的任務。</p></div><nav class="cnav" data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" class="prev" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>← 上一章</span><span class="nt" data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a><a href="/rust/ch13-async-basics" class="next" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>下一章 →</span><span class="nt" data-astro-cid-ccykbmgk>async/await 基礎</span></a></nav></main></div><script>
+    // Theme
+    const html = document.documentElement;
+    const tt = document.getElementById('tt');
+    const isun = document.getElementById('isun');
+    const imoon = document.getElementById('imoon');
+    function syncIcons() {
+      const dk = html.classList.contains('dark');
+      isun.style.display = dk ? 'block' : 'none';
+      imoon.style.display = dk ? 'none' : 'block';
+    }
+    syncIcons();
+    tt?.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('cc-theme', html.classList.contains('dark') ? 'dark' : 'light');
+      syncIcons();
+    });
+
+    // Progress
+    const pb = document.getElementById('pb');
+    window.addEventListener('scroll', () => {
+      const t = document.documentElement.scrollHeight - window.innerHeight;
+      pb.style.width = t > 0 ? `${(window.scrollY / t) * 100}%` : '0%';
+    }, { passive: true });
+
+    // Sidebar part toggles
+    document.querySelectorAll('.pt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pid;
+        const list = document.querySelector(`[data-pl="${id}"]`);
+        btn.classList.toggle('open');
+        list?.classList.toggle('closed');
+      });
+    });
+
+    // Mobile menu
+    const sb = document.getElementById('sb');
+    const ov = document.getElementById('ov');
+    const mb = document.getElementById('mbtn');
+    const open = () => { sb.classList.add('open'); ov.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close = () => { sb.classList.remove('open'); ov.classList.remove('open'); document.body.style.overflow=''; };
+    mb?.addEventListener('click', open);
+    ov?.addEventListener('click', close);
+  </script></body></html>

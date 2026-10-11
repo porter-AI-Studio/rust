@@ -1,0 +1,535 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-ccykbmgk><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>生命週期：借用的時間限制 | Rust 實戰指南</title><meta name="description" content="說明生命週期如何防止懸空參考：borrow checker 的運作、函式簽名中的生命週期標註、結構體與方法的生命週期、三條省略規則、'static，以及生命週期邊界語法的簡介。"><link rel="icon" href="/rust/favicon.svg" type="image/svg+xml"><script>
+    (function () {
+      const s = localStorage.getItem('cc-theme');
+      const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && d)) document.documentElement.classList.add('dark');
+    })();
+  </script><link rel="stylesheet" href="/rust/_astro/DocsLayout.9CQhNdRI.css"><style>.cb-wrap[data-astro-cid-c6nuo4je]{margin-bottom:1.25rem}.cb-bar[data-astro-cid-c6nuo4je]{background:#1a1a2e;border:1px solid #ffffff14;border-bottom-color:#ffffff0d;border-radius:6px 6px 0 0;justify-content:space-between;align-items:center;min-height:1.8rem;padding:.18rem .5rem .18rem .75rem;display:flex}.cb-label[data-astro-cid-c6nuo4je]{color:#a6adc8;letter-spacing:.04em;font-family:Fira Code,Cascadia Code,Consolas,monospace;font-size:.73rem}.cb-inner[data-astro-cid-c6nuo4je] pre{border-radius:0 0 8px 8px!important;margin-bottom:0!important}.cb-copy[data-astro-cid-c6nuo4je]{color:#888;cursor:pointer;background:#ffffff14;border:1px solid #ffffff1f;border-radius:4px;flex-shrink:0;padding:.15rem .55rem;font-size:.7rem;transition:all .15s}.cb-copy[data-astro-cid-c6nuo4je]:hover{color:#fff;background:#ffffff2e}.cb-copy[data-astro-cid-c6nuo4je].copied{color:#4ec9b0;border-color:#4ec9b0}
+</style></head><body data-astro-cid-ccykbmgk><div id="pb" data-astro-cid-ccykbmgk></div><header data-astro-cid-ccykbmgk><div class="hi" data-astro-cid-ccykbmgk><div class="hl" data-astro-cid-ccykbmgk><button id="mbtn" class="ibtn" aria-label="選單" data-astro-cid-ccykbmgk><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" data-astro-cid-ccykbmgk></path></svg></button><a href="/rust/" class="site-name" data-astro-cid-ccykbmgk><span class="logo" data-astro-cid-ccykbmgk>RS</span>&nbsp;&nbsp;Rust 實戰指南</a></div><div class="hr" data-astro-cid-ccykbmgk><button id="tt" class="ibtn" aria-label="切換主題" data-astro-cid-ccykbmgk><svg id="isun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" data-astro-cid-ccykbmgk></path></svg><svg id="imoon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z" data-astro-cid-ccykbmgk></path></svg></button></div></div></header><div id="layout" data-astro-cid-ccykbmgk><nav id="sb" data-astro-cid-ccykbmgk><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="0" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 0：前言</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="0" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/preface" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>0.</span><span data-astro-cid-ccykbmgk>前言</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="1" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 1：認識 Rust</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="1" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch01-what-is-rust" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>1.</span><span data-astro-cid-ccykbmgk>Rust 是什麼：設計目標與適用場景</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch02-setup-cargo" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>2.</span><span data-astro-cid-ccykbmgk>安裝與 Cargo：第一個專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch03-syntax-crash-course" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>3.</span><span data-astro-cid-ccykbmgk>基礎語法速成：從範例開始</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch04-rust-vs-go" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>4.</span><span data-astro-cid-ccykbmgk>Rust 與 Go：什麼時候選哪一個</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="2" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 2：所有權：Rust 的核心</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="2" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch05-ownership" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>5.</span><span data-astro-cid-ccykbmgk>所有權：堆疊、堆積與三條規則</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>6.</span><span data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch07-lifetimes" class="active" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>7.</span><span data-astro-cid-ccykbmgk>生命週期：借用的時間限制</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch08-ownership-for-ts" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>8.</span><span data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt open" data-pid="3" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 3：型別系統與錯誤處理</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl" data-pl="3" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch09-error-handling" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>9.</span><span data-astro-cid-ccykbmgk>錯誤處理：Result、panic 與測試</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch10-traits-generics-closures" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>10.</span><span data-astro-cid-ccykbmgk>Trait、泛型、閉包與迭代器</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch11-smart-pointers-unsafe" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>11.</span><span data-astro-cid-ccykbmgk>智慧指標與 unsafe</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="4" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 4：並行與非同步</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="4" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch12-concurrency" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>12.</span><span data-astro-cid-ccykbmgk>無畏並行：執行緒、通道與共享狀態</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch13-async-basics" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>13.</span><span data-astro-cid-ccykbmgk>async/await 基礎</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch14-tokio-axum" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>14.</span><span data-astro-cid-ccykbmgk>用 Tokio 與 axum 寫非同步程式</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="5" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 5：工程實務與生態</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="5" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/ch15-idioms-and-project" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>15.</span><span data-astro-cid-ccykbmgk>慣用寫法與小型專案</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch16-systems-linux-embedded" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>16.</span><span data-astro-cid-ccykbmgk>系統層：Rust for Linux、嵌入式與 Pingora</span></a></li><li data-astro-cid-ccykbmgk><a href="/rust/ch17-reality-check" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>17.</span><span data-astro-cid-ccykbmgk>現實檢查：批評、代價與重寫案例</span></a></li></ul></div><div class="np" data-astro-cid-ccykbmgk><button class="pt" data-pid="6" data-astro-cid-ccykbmgk><span data-astro-cid-ccykbmgk>Part 6：附錄</span><svg class="arr" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" data-astro-cid-ccykbmgk><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-ccykbmgk></path></svg></button><ul class="nl closed" data-pl="6" data-astro-cid-ccykbmgk><li data-astro-cid-ccykbmgk><a href="/rust/glossary" data-astro-cid-ccykbmgk><span class="cn" data-astro-cid-ccykbmgk>18.</span><span data-astro-cid-ccykbmgk>名詞解釋</span></a></li></ul></div></nav><div id="ov" data-astro-cid-ccykbmgk></div><main data-astro-cid-ccykbmgk><div class="cb" data-astro-cid-ccykbmgk><span class="clabel">第 7 章 · Part 2：所有權：Rust 的核心</span><h1>生命週期：借用的時間限制</h1><p class="cdesc">每個參考都有「有效多久」的期限；標註生命週期，就是告訴編譯器參考之間的時間關係。</p><p>上一章我們看到，編譯器保證參考不會比它指向的資料活得更久，並在 <code>dangle</code> 的錯誤訊息裡遇到了「missing lifetime specifier」。這一章就來拆解這個機制：生命週期（lifetime）。</p><div class="call info"><span class="ci">ℹ️</span><div><strong>本章素材來源</strong><p>主要範例與編譯器輸出取自官方 The Rust Programming Language 的 <a href="https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html">Validating References with Lifetimes</a>（官方範例編號沿用原書，如 Listing 10-16）。生命週期邊界一節取自簡體中文技術文（AtomGit 開源社區），屬非官方來源，範例我們未逐一編譯驗證，使用時請以官方文件為準。</p></div></div><h2>生命週期是什麼</h2><p>官方文件說，生命週期是另一種「泛型」：型別參數確保型別具備我們要的行為，生命週期則確保參考在我們需要的時間內都有效。Rust 中每個參考都有生命週期，也就是該參考有效的作用範圍。多數時候它是隱含並由編譯器推斷的，就像型別大多可以推斷一樣；只有當參考之間的生命週期關係可能有多種可能時，才需要我們標註。</p><p>官方文件也坦白說：標註生命週期不是多數語言有的概念，會感覺陌生。</p><h2>目標：防止懸空參考</h2><p>生命週期的主要目的就是避免懸空參考。下面的程式有外層與內層兩個作用域：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 10-16：使用已離開作用域的值的參考（官方 Rust Book，無法編譯）</span><button class="cb-copy" data-code="fn main() {
+    let r;
+
+    {
+        let x = 5;
+        r = &amp;x;
+    }
+
+    println!(&quot;r: {r}&quot;);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> x</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 5</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#E06C75">        r</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"r: {r}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><script type="module">document.querySelectorAll(`.cb-copy`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.code;t&&navigator.clipboard.writeText(t).then(()=>{e.textContent=`已複製!`,e.classList.add(`copied`),setTimeout(()=>{e.textContent=`複製`,e.classList.remove(`copied`)},2e3)})})});</script><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>編譯器輸出（官方 Rust Book）</span><button class="cb-copy" data-code="$ cargo run
+   Compiling chapter10 v0.1.0 (file:///projects/chapter10)
+error[E0597]: `x` does not live long enough
+ --> src/main.rs:6:13
+  |
+5 |         let x = 5;
+  |             - binding `x` declared here
+6 |         r = &amp;x;
+  |             ^^ borrowed value does not live long enough
+7 |     }
+  |     - `x` dropped here while still borrowed
+8 |
+9 |     println!(&quot;r: {r}&quot;);
+  |                   - borrow later used here
+
+For more information about this error, try `rustc --explain E0597`.
+error: could not compile `chapter10` (bin &quot;chapter10&quot;) due to 1 previous error" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> run</span></span>
+<span class="line"><span style="color:#61AFEF">   Compiling</span><span style="color:#98C379"> chapter10</span><span style="color:#98C379"> v0.1.0</span><span style="color:#ABB2BF"> (file:///projects/chapter10)</span></span>
+<span class="line"><span style="color:#61AFEF">error[E0597]:</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">x</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> does</span><span style="color:#98C379"> not</span><span style="color:#98C379"> live</span><span style="color:#98C379"> long</span><span style="color:#98C379"> enough</span></span>
+<span class="line"><span style="color:#61AFEF"> --</span><span style="color:#ABB2BF">> </span><span style="color:#98C379">src/main.rs:6:13</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">5</span><span style="color:#ABB2BF"> |         </span><span style="color:#56B6C2">let</span><span style="color:#98C379"> x</span><span style="color:#98C379"> =</span><span style="color:#D19A66"> 5</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">  |             </span><span style="color:#61AFEF">-</span><span style="color:#98C379"> binding</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">x</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> declared</span><span style="color:#98C379"> here</span></span>
+<span class="line"><span style="color:#61AFEF">6</span><span style="color:#ABB2BF"> |         </span><span style="color:#61AFEF">r</span><span style="color:#98C379"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#61AFEF">x</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">  |             </span><span style="color:#61AFEF">^^</span><span style="color:#98C379"> borrowed</span><span style="color:#98C379"> value</span><span style="color:#98C379"> does</span><span style="color:#98C379"> not</span><span style="color:#98C379"> live</span><span style="color:#98C379"> long</span><span style="color:#98C379"> enough</span></span>
+<span class="line"><span style="color:#61AFEF">7</span><span style="color:#ABB2BF"> |     }</span></span>
+<span class="line"><span style="color:#ABB2BF">  |     </span><span style="color:#61AFEF">-</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">x</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> dropped</span><span style="color:#98C379"> here</span><span style="color:#98C379"> while</span><span style="color:#98C379"> still</span><span style="color:#98C379"> borrowed</span></span>
+<span class="line"><span style="color:#61AFEF">8</span><span style="color:#ABB2BF"> |</span></span>
+<span class="line"><span style="color:#61AFEF">9</span><span style="color:#ABB2BF"> |     </span><span style="color:#61AFEF">println!(</span><span style="color:#61AFEF">"r: {r}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">  |                   </span><span style="color:#61AFEF">-</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> later</span><span style="color:#98C379"> used</span><span style="color:#98C379"> here</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">For</span><span style="color:#98C379"> more</span><span style="color:#98C379"> information</span><span style="color:#98C379"> about</span><span style="color:#98C379"> this</span><span style="color:#98C379"> error,</span><span style="color:#98C379"> try</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">rustc</span><span style="color:#D19A66"> --explain</span><span style="color:#98C379"> E0597`</span><span style="color:#56B6C2">.</span></span>
+<span class="line"><span style="color:#61AFEF">error:</span><span style="color:#98C379"> could</span><span style="color:#98C379"> not</span><span style="color:#98C379"> compile</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">chapter10</span><span style="color:#98C379">`</span><span style="color:#ABB2BF"> (</span><span style="color:#61AFEF">bin</span><span style="color:#98C379"> "chapter10"</span><span style="color:#ABB2BF">) </span><span style="color:#61AFEF">due</span><span style="color:#98C379"> to</span><span style="color:#D19A66"> 1</span><span style="color:#98C379"> previous</span><span style="color:#98C379"> error</span></span></code></pre></div></div><p>錯誤訊息說 <code>x</code>「does not live long enough」：<code>x</code> 在內層作用域結束時就被釋放，但 <code>r</code> 在外層還活著；因為 <code>r</code> 的範圍較大，所以說它「活得比較久」。順帶一提，官方文件在這裡加註：這類先宣告、後給值的寫法並不表示 Rust 有 null；如果在給值之前使用變數，編譯時一樣會報錯。</p><h3>Borrow checker：比較範圍大小</h3><p>編譯器內建 borrow checker，會比較各個範圍，判斷所有借用是否有效。官方用標註把 <code>r</code> 的生命週期記為 <code>'a</code>、<code>x</code> 的記為 <code>'b</code>：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 10-17：標註 r 與 x 的生命週期（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let r;                // ---------+-- 'a
+                          //          |
+    {                     //          |
+        let x = 5;        // -+-- 'b  |
+        r = &amp;x;           //  |       |
+    }                     // -+       |
+                          //          |
+    println!(&quot;r: {r}&quot;);   //          |
+}                         // ---------+" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r</span><span style="color:#ABB2BF">;                </span><span style="color:#7F848E;font-style:italic">// ---------+-- 'a</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                          //          |</span></span>
+<span class="line"><span style="color:#ABB2BF">    {                     </span><span style="color:#7F848E;font-style:italic">//          |</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> x</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 5</span><span style="color:#ABB2BF">;        </span><span style="color:#7F848E;font-style:italic">// -+-- 'b  |</span></span>
+<span class="line"><span style="color:#E06C75">        r</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">;           </span><span style="color:#7F848E;font-style:italic">//  |       |</span></span>
+<span class="line"><span style="color:#ABB2BF">    }                     </span><span style="color:#7F848E;font-style:italic">// -+       |</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                          //          |</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"r: {r}"</span><span style="color:#ABB2BF">);   </span><span style="color:#7F848E;font-style:italic">//          |</span></span>
+<span class="line"><span style="color:#ABB2BF">}                         </span><span style="color:#7F848E;font-style:italic">// ---------+</span></span></code></pre></div></div><p>編譯期比較兩者：<code>r</code> 的生命週期是 <code>'a</code>，卻指向生命週期為 <code>'b</code> 的記憶體，而 <code>'b</code> 比 <code>'a</code> 短，所以被拒絕：被參考的對象，活得沒有參考本身久。把 <code>x</code> 的宣告移到外層，就沒有問題：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 10-18：資料的生命週期比參考長，所以有效（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let x = 5;            // ----------+-- 'b
+                          //           |
+    let r = &amp;x;           // --+-- 'a  |
+                          //   |       |
+    println!(&quot;r: {r}&quot;);   //   |       |
+                          // --+       |
+}                         // ----------+" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> x</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 5</span><span style="color:#ABB2BF">;            </span><span style="color:#7F848E;font-style:italic">// ----------+-- 'b</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                          //           |</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> r</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">;           </span><span style="color:#7F848E;font-style:italic">// --+-- 'a  |</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                          //   |       |</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"r: {r}"</span><span style="color:#ABB2BF">);   </span><span style="color:#7F848E;font-style:italic">//   |       |</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">                          // --+       |</span></span>
+<span class="line"><span style="color:#ABB2BF">}                         </span><span style="color:#7F848E;font-style:italic">// ----------+</span></span></code></pre></div></div><figure class="svg-fig"><svg width="100%" height="auto" viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg" role="img"><defs><marker id="arr-c07" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--muted)"/></marker></defs><g font-family="system-ui, sans-serif"><text x="20" y="76" text-anchor="start" font-size="16px" fill="var(--muted)" >r（外層）</text><text x="20" y="166" text-anchor="start" font-size="16px" fill="var(--muted)" >x（內層）</text><rect x="170" y="50" width="590" height="40" rx="8" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/><text x="465" y="76" text-anchor="middle" font-size="17px" fill="var(--text)" >r 的生命週期 'a</text><rect x="330" y="140" width="210" height="40" rx="8" fill="var(--bg)" stroke="var(--accent2)" stroke-width="2"/><text x="435" y="166" text-anchor="middle" font-size="17px" fill="var(--text)" >x 的生命週期 'b</text><path d="M435,98 L435,132" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-c07)"/><text x="447" y="120" text-anchor="start" font-size="15px" fill="var(--text)" >r = &amp;x</text><line x1="540" y1="44" x2="540" y2="196" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6 4"/><text x="540" y="216" text-anchor="middle" font-size="15px" fill="var(--muted)" >內層作用域結束，x 被釋放</text><text x="556" y="166" text-anchor="start" font-size="15px" fill="var(--muted)" >x 已釋放，r 還活著</text><rect x="20" y="240" width="740" height="100" rx="8" fill="var(--bg2)" stroke="var(--accent)" stroke-width="2"/><text x="390" y="276" text-anchor="middle" font-size="17px" fill="var(--text)" font-weight="bold" >'b 比 'a 短：被參考的對象活得沒有參考本身久</text><text x="390" y="310" text-anchor="middle" font-size="16px" fill="var(--accent)" >does not live long enough，所以編譯器拒絕</text></g></svg><figcaption>圖 7-1：borrow checker 比較 r 的生命週期 'a 與 x 的生命週期 'b，'b 比較短所以被拒絕（依官方 Rust Book 的說明繪製）</figcaption></figure><h2>函式裡的泛型生命週期：longest</h2><p>現在寫一個回傳兩個字串切片中較長者的函式。不拿走所有權，所以參數用字串切片（參考）。直接寫會失敗：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 10-20：還不能編譯的 longest（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let string1 = String::from(&quot;abcd&quot;);
+    let string2 = &quot;xyz&quot;;
+
+    let result = longest(string1.as_str(), string2);
+    println!(&quot;The longest string is {result}&quot;);
+}
+
+fn longest(x: &amp;str, y: &amp;str) -> &amp;str {
+    if x.len() > y.len() { x } else { y }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"abcd"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string2</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "xyz"</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">string1</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_str</span><span style="color:#ABB2BF">(), </span><span style="color:#E06C75">string2</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The longest string is {result}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF">) -> &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#E06C75"> x</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">() > </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">() { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF"> } </span><span style="color:#C678DD">else</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>編譯器輸出（官方 Rust Book）</span><button class="cb-copy" data-code="$ cargo run
+   Compiling chapter10 v0.1.0 (file:///projects/chapter10)
+error[E0106]: missing lifetime specifier
+ --> src/main.rs:9:33
+  |
+9 | fn longest(x: &amp;str, y: &amp;str) -> &amp;str {
+  |               ----     ----     ^ expected named lifetime parameter
+  |
+  = help: this function's return type contains a borrowed value, but the signature does not say whether it is borrowed from `x` or `y`
+help: consider introducing a named lifetime parameter
+  |
+9 | fn longest<'a>(x: &amp;'a str, y: &amp;'a str) -> &amp;'a str {
+  |           ++++     ++          ++          ++
+
+For more information about this error, try `rustc --explain E0106`.
+error: could not compile `chapter10` (bin &quot;chapter10&quot;) due to 1 previous error" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> run</span></span>
+<span class="line"><span style="color:#61AFEF">   Compiling</span><span style="color:#98C379"> chapter10</span><span style="color:#98C379"> v0.1.0</span><span style="color:#ABB2BF"> (file:///projects/chapter10)</span></span>
+<span class="line"><span style="color:#61AFEF">error[E0106]:</span><span style="color:#98C379"> missing</span><span style="color:#98C379"> lifetime</span><span style="color:#98C379"> specifier</span></span>
+<span class="line"><span style="color:#61AFEF"> --</span><span style="color:#ABB2BF">> </span><span style="color:#98C379">src/main.rs:9:33</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">9</span><span style="color:#ABB2BF"> | </span><span style="color:#61AFEF">fn</span><span style="color:#98C379"> longest</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">x:</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#61AFEF">str,</span><span style="color:#98C379"> y:</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#61AFEF">str</span><span style="color:#ABB2BF">) -> &#x26;</span><span style="color:#61AFEF">str</span><span style="color:#98C379"> {</span></span>
+<span class="line"><span style="color:#ABB2BF">  |               </span><span style="color:#61AFEF">----</span><span style="color:#D19A66">     ----</span><span style="color:#98C379">     ^</span><span style="color:#98C379"> expected</span><span style="color:#98C379"> named</span><span style="color:#98C379"> lifetime</span><span style="color:#98C379"> parameter</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#98C379">  =</span><span style="color:#98C379"> help:</span><span style="color:#98C379"> this</span><span style="color:#98C379"> function's return type contains a borrowed value, but the signature does not say whether it is borrowed from `x` or `y`</span></span>
+<span class="line"><span style="color:#98C379">help: consider introducing a named lifetime parameter</span></span>
+<span class="line"><span style="color:#98C379">  |</span></span>
+<span class="line"><span style="color:#98C379">9 | fn longest&#x3C;'</span><span style="color:#ABB2BF">a</span><span style="color:#98C379">>(</span><span style="color:#61AFEF">x:</span><span style="color:#98C379"> &#x26;</span><span style="color:#61AFEF">'a str, y: &#x26;'a</span><span style="color:#98C379"> str)</span><span style="color:#ABB2BF"> -> &#x26;</span><span style="color:#61AFEF">'a str {</span></span>
+<span class="line"><span style="color:#61AFEF">  |           ++++     ++          ++          ++</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">For more information about this error, try `rustc --explain E0106`.</span></span>
+<span class="line"><span style="color:#61AFEF">error: could not compile `chapter10` (bin "chapter10") due to 1 previous error</span></span></code></pre></div></div><p>原因是編譯器無法判斷回傳的參考是借自 <code>x</code> 還是 <code>y</code>；事實上我們自己也不知道，因為 <code>if</code> 回傳 <code>x</code>、<code>else</code> 回傳 <code>y</code>。呼叫前我們也不知道實際傳入參考的生命週期，所以沒辦法像前面那樣直接比較範圍。因此需要泛型生命週期參數來描述它們的關係。</p><h3>標註語法</h3><p>官方文件強調：生命週期標註不會改變任何參考活多久，它只描述多個參考的生命週期之間的關係。名稱以單引號開頭，通常全小寫且很短，慣例第一個叫 <code>'a</code>，寫在 <code>&amp;</code> 之後，用空格與型別隔開：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>生命週期標註語法（官方 Rust Book）</span><button class="cb-copy" data-code="&amp;i32        // a reference
+&amp;'a i32     // a reference with an explicit lifetime
+&amp;'a mut i32 // a mutable reference with an explicit lifetime" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#ABB2BF">&#x26;</span><span style="color:#E5C07B">i32</span><span style="color:#7F848E;font-style:italic">        // a reference</span></span>
+<span class="line"><span style="color:#ABB2BF">&#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> i32</span><span style="color:#7F848E;font-style:italic">     // a reference with an explicit lifetime</span></span>
+<span class="line"><span style="color:#ABB2BF">&#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#C678DD"> mut</span><span style="color:#E5C07B"> i32</span><span style="color:#7F848E;font-style:italic"> // a mutable reference with an explicit lifetime</span></span></code></pre></div></div><p>單獨一個標註沒有意義，標註的作用在於告訴 Rust 多個參考的泛型生命週期如何相互關聯。</p><h3>函式簽名中的標註</h3><p>我們要表達的限制是：回傳的參考，在兩個參數都有效的期間內都有效。於是把 <code>'a</code> 加到每個參考上：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 10-21：指定所有參考共用同一個生命週期 &#39;a（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let string1 = String::from(&quot;abcd&quot;);
+    let string2 = &quot;xyz&quot;;
+
+    let result = longest(string1.as_str(), string2);
+    println!(&quot;The longest string is {result}&quot;);
+}
+
+fn longest<'a>(x: &amp;'a str, y: &amp;'a str) -> &amp;'a str {
+    if x.len() > y.len() { x } else { y }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"abcd"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string2</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "xyz"</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">string1</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_str</span><span style="color:#ABB2BF">(), </span><span style="color:#E06C75">string2</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The longest string is {result}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">>(</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">) -> &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#E06C75"> x</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">() > </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">() { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF"> } </span><span style="color:#C678DD">else</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>這個簽名告訴 Rust：對某個生命週期 <code>'a</code>，兩個參數至少活得和 <code>'a</code> 一樣久，回傳值也至少活得和 <code>'a</code> 一樣久。實務上，回傳參考的生命週期，等於兩個引數中較短的那一個。要注意：我們不是在改變傳入值的生命週期，而是在指定 borrow checker 應該拒絕所有不符合這些限制的值。標註放在函式簽名而非函式本體，它是函式合約的一部分，就像簽名中的型別。</p><p>用不同生命週期的引數實驗。<code>string1</code> 活到外層結束，<code>string2</code> 只活到內層結束，而 <code>result</code> 也在內層使用，借用檢查通過：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 10-22：不同生命週期的 String 參考（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let string1 = String::from(&quot;long string is long&quot;);
+
+    {
+        let string2 = String::from(&quot;xyz&quot;);
+        let result = longest(string1.as_str(), string2.as_str());
+        println!(&quot;The longest string is {result}&quot;);
+    }
+}
+
+fn longest<'a>(x: &amp;'a str, y: &amp;'a str) -> &amp;'a str {
+    if x.len() > y.len() { x } else { y }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"long string is long"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> string2</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"xyz"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">string1</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_str</span><span style="color:#ABB2BF">(), </span><span style="color:#E06C75">string2</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_str</span><span style="color:#ABB2BF">());</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The longest string is {result}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">>(</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">) -> &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#E06C75"> x</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">() > </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">() { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF"> } </span><span style="color:#C678DD">else</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>接著把 <code>result</code> 的宣告移到外層、<code>println!</code> 也放到內層結束之後，就無法編譯：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 10-23：string2 離開作用域後使用 result（官方 Rust Book，無法編譯）</span><button class="cb-copy" data-code="fn main() {
+    let string1 = String::from(&quot;long string is long&quot;);
+    let result;
+    {
+        let string2 = String::from(&quot;xyz&quot;);
+        result = longest(string1.as_str(), string2.as_str());
+    }
+    println!(&quot;The longest string is {result}&quot;);
+}
+
+fn longest<'a>(x: &amp;'a str, y: &amp;'a str) -> &amp;'a str {
+    if x.len() > y.len() { x } else { y }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"long string is long"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> result</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"><span style="color:#ABB2BF">    {</span></span>
+<span class="line"><span style="color:#C678DD">        let</span><span style="color:#E06C75"> string2</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"xyz"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#E06C75">        result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">string1</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_str</span><span style="color:#ABB2BF">(), </span><span style="color:#E06C75">string2</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_str</span><span style="color:#ABB2BF">());</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The longest string is {result}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">>(</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">) -> &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#E06C75"> x</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">() > </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">() { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF"> } </span><span style="color:#C678DD">else</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>編譯器輸出（官方 Rust Book）</span><button class="cb-copy" data-code="$ cargo run
+   Compiling chapter10 v0.1.0 (file:///projects/chapter10)
+error[E0597]: `string2` does not live long enough
+ --> src/main.rs:6:44
+  |
+5 |         let string2 = String::from(&quot;xyz&quot;);
+  |             ------- binding `string2` declared here
+6 |         result = longest(string1.as_str(), string2.as_str());
+  |                                            ^^^^^^^ borrowed value does not live long enough
+7 |     }
+  |     - `string2` dropped here while still borrowed
+8 |     println!(&quot;The longest string is {result}&quot;);
+  |                                      ------ borrow later used here
+
+For more information about this error, try `rustc --explain E0597`.
+error: could not compile `chapter10` (bin &quot;chapter10&quot;) due to 1 previous error" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> run</span></span>
+<span class="line"><span style="color:#61AFEF">   Compiling</span><span style="color:#98C379"> chapter10</span><span style="color:#98C379"> v0.1.0</span><span style="color:#ABB2BF"> (file:///projects/chapter10)</span></span>
+<span class="line"><span style="color:#61AFEF">error[E0597]:</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">string2</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> does</span><span style="color:#98C379"> not</span><span style="color:#98C379"> live</span><span style="color:#98C379"> long</span><span style="color:#98C379"> enough</span></span>
+<span class="line"><span style="color:#61AFEF"> --</span><span style="color:#ABB2BF">> </span><span style="color:#98C379">src/main.rs:6:44</span></span>
+<span class="line"><span style="color:#ABB2BF">  |</span></span>
+<span class="line"><span style="color:#61AFEF">5</span><span style="color:#ABB2BF"> |         </span><span style="color:#56B6C2">let</span><span style="color:#98C379"> string2</span><span style="color:#98C379"> =</span><span style="color:#98C379"> String::from</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">"xyz"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">  |             </span><span style="color:#61AFEF">-------</span><span style="color:#98C379"> binding</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">string2</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> declared</span><span style="color:#98C379"> here</span></span>
+<span class="line"><span style="color:#61AFEF">6</span><span style="color:#ABB2BF"> |         </span><span style="color:#61AFEF">result</span><span style="color:#98C379"> =</span><span style="color:#98C379"> longest</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">string1.as_str</span><span style="color:#ABB2BF">(), </span><span style="color:#61AFEF">string2.as_str</span><span style="color:#ABB2BF">());</span></span>
+<span class="line"><span style="color:#ABB2BF">  |                                            </span><span style="color:#61AFEF">^^^^^^^</span><span style="color:#98C379"> borrowed</span><span style="color:#98C379"> value</span><span style="color:#98C379"> does</span><span style="color:#98C379"> not</span><span style="color:#98C379"> live</span><span style="color:#98C379"> long</span><span style="color:#98C379"> enough</span></span>
+<span class="line"><span style="color:#61AFEF">7</span><span style="color:#ABB2BF"> |     }</span></span>
+<span class="line"><span style="color:#ABB2BF">  |     </span><span style="color:#61AFEF">-</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">string2</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> dropped</span><span style="color:#98C379"> here</span><span style="color:#98C379"> while</span><span style="color:#98C379"> still</span><span style="color:#98C379"> borrowed</span></span>
+<span class="line"><span style="color:#61AFEF">8</span><span style="color:#ABB2BF"> |     </span><span style="color:#61AFEF">println!(</span><span style="color:#61AFEF">"The longest string is {result}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">  |                                      </span><span style="color:#61AFEF">------</span><span style="color:#98C379"> borrow</span><span style="color:#98C379"> later</span><span style="color:#98C379"> used</span><span style="color:#98C379"> here</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">For</span><span style="color:#98C379"> more</span><span style="color:#98C379"> information</span><span style="color:#98C379"> about</span><span style="color:#98C379"> this</span><span style="color:#98C379"> error,</span><span style="color:#98C379"> try</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">rustc</span><span style="color:#D19A66"> --explain</span><span style="color:#98C379"> E0597`</span><span style="color:#56B6C2">.</span></span>
+<span class="line"><span style="color:#61AFEF">error:</span><span style="color:#98C379"> could</span><span style="color:#98C379"> not</span><span style="color:#98C379"> compile</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">chapter10</span><span style="color:#98C379">`</span><span style="color:#ABB2BF"> (</span><span style="color:#61AFEF">bin</span><span style="color:#98C379"> "chapter10"</span><span style="color:#ABB2BF">) </span><span style="color:#61AFEF">due</span><span style="color:#98C379"> to</span><span style="color:#D19A66"> 1</span><span style="color:#98C379"> previous</span><span style="color:#98C379"> error</span></span></code></pre></div></div><p>人眼看得出 <code>string1</code> 比較長，所以 <code>result</code> 其實指向 <code>string1</code>；但我們已經告訴 Rust「回傳值的生命週期是兩個引數中較短者」，編譯器就只能依簽名判斷，保守地拒絕。</p><h3>關係決定怎麼標</h3><p>標註的寫法取決於函式做什麼。如果 <code>longest</code> 永遠回傳第一個參數，<code>y</code> 就不需要標註，因為 <code>y</code> 的生命週期與 <code>x</code> 或回傳值無關：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>只有 x 與回傳值有關係（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let string1 = String::from(&quot;abcd&quot;);
+    let string2 = &quot;efghijklmnopqrstuvwxyz&quot;;
+
+    let result = longest(string1.as_str(), string2);
+    println!(&quot;The longest string is {result}&quot;);
+}
+
+fn longest<'a>(x: &amp;'a str, y: &amp;str) -> &amp;'a str {
+    x
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"abcd"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string2</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "efghijklmnopqrstuvwxyz"</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">string1</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_str</span><span style="color:#ABB2BF">(), </span><span style="color:#E06C75">string2</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The longest string is {result}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">>(</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF">) -> &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">    x</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>回傳參考時，回傳型別的生命週期必須對應到某個參數；否則它指向函式內建立的值，那就是懸空參考。下例即使替回傳型別加了 <code>'a</code> 也無法編譯：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>回傳區域變數的參考（官方 Rust Book，無法編譯）</span><button class="cb-copy" data-code="fn main() {
+    let string1 = String::from(&quot;abcd&quot;);
+    let string2 = &quot;xyz&quot;;
+
+    let result = longest(string1.as_str(), string2);
+    println!(&quot;The longest string is {result}&quot;);
+}
+
+fn longest<'a>(x: &amp;str, y: &amp;str) -> &amp;'a str {
+    let result = String::from(&quot;really long string&quot;);
+    result.as_str()
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"abcd"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string2</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "xyz"</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">string1</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_str</span><span style="color:#ABB2BF">(), </span><span style="color:#E06C75">string2</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The longest string is {result}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> longest</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">>(</span><span style="color:#E06C75">x</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF">) -> &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"really long string"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#E06C75">    result</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_str</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>編譯器輸出（官方 Rust Book）</span><button class="cb-copy" data-code="$ cargo run
+   Compiling chapter10 v0.1.0 (file:///projects/chapter10)
+error[E0515]: cannot return value referencing local variable `result`
+  --> src/main.rs:11:5
+   |
+11 |     result.as_str()
+   |     ------^^^^^^^^^
+   |     |
+   |     returns a value referencing data owned by the current function
+   |     `result` is borrowed here
+
+For more information about this error, try `rustc --explain E0515`.
+error: could not compile `chapter10` (bin &quot;chapter10&quot;) due to 1 previous error" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="bash"><code><span class="line"><span style="color:#61AFEF">$</span><span style="color:#98C379"> cargo</span><span style="color:#98C379"> run</span></span>
+<span class="line"><span style="color:#61AFEF">   Compiling</span><span style="color:#98C379"> chapter10</span><span style="color:#98C379"> v0.1.0</span><span style="color:#ABB2BF"> (file:///projects/chapter10)</span></span>
+<span class="line"><span style="color:#61AFEF">error[E0515]:</span><span style="color:#98C379"> cannot</span><span style="color:#98C379"> return</span><span style="color:#98C379"> value</span><span style="color:#98C379"> referencing</span><span style="color:#98C379"> local</span><span style="color:#98C379"> variable</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">result</span><span style="color:#98C379">`</span></span>
+<span class="line"><span style="color:#61AFEF">  --</span><span style="color:#ABB2BF">> </span><span style="color:#98C379">src/main.rs:11:5</span></span>
+<span class="line"><span style="color:#ABB2BF">   |</span></span>
+<span class="line"><span style="color:#61AFEF">11</span><span style="color:#ABB2BF"> |     </span><span style="color:#61AFEF">result.as_str</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">   |     </span><span style="color:#61AFEF">------^^^^^^^^^</span></span>
+<span class="line"><span style="color:#ABB2BF">   |     |</span></span>
+<span class="line"><span style="color:#ABB2BF">   |     </span><span style="color:#61AFEF">returns</span><span style="color:#98C379"> a</span><span style="color:#98C379"> value</span><span style="color:#98C379"> referencing</span><span style="color:#98C379"> data</span><span style="color:#98C379"> owned</span><span style="color:#98C379"> by</span><span style="color:#98C379"> the</span><span style="color:#98C379"> current</span><span style="color:#98C379"> function</span></span>
+<span class="line"><span style="color:#ABB2BF">   |     </span><span style="color:#98C379">`</span><span style="color:#61AFEF">result</span><span style="color:#98C379">`</span><span style="color:#61AFEF"> is</span><span style="color:#98C379"> borrowed</span><span style="color:#98C379"> here</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">For</span><span style="color:#98C379"> more</span><span style="color:#98C379"> information</span><span style="color:#98C379"> about</span><span style="color:#98C379"> this</span><span style="color:#98C379"> error,</span><span style="color:#98C379"> try</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">rustc</span><span style="color:#D19A66"> --explain</span><span style="color:#98C379"> E0515`</span><span style="color:#56B6C2">.</span></span>
+<span class="line"><span style="color:#61AFEF">error:</span><span style="color:#98C379"> could</span><span style="color:#98C379"> not</span><span style="color:#98C379"> compile</span><span style="color:#98C379"> `</span><span style="color:#61AFEF">chapter10</span><span style="color:#98C379">`</span><span style="color:#ABB2BF"> (</span><span style="color:#61AFEF">bin</span><span style="color:#98C379"> "chapter10"</span><span style="color:#ABB2BF">) </span><span style="color:#61AFEF">due</span><span style="color:#98C379"> to</span><span style="color:#D19A66"> 1</span><span style="color:#98C379"> previous</span><span style="color:#98C379"> error</span></span></code></pre></div></div><p>官方文件的建議是：此時最佳解法是回傳擁有所有權的型別，讓呼叫端負責清理。</p><figure class="svg-fig"><img src="/rust/img/ch07/01-framework-longest-annotation.png" alt="longest 函式簽名中生命週期標註表達參數與回傳值關係的示意" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 7-2：生命週期標註描述關係、不改變活多久：longest 的回傳值有效期取兩個引數中較短者</figcaption></figure><h2>結構體中的生命週期</h2><p>結構體也可以持有參考，但每個參考都要加上生命週期標註。宣告方式與泛型相同：在結構體名稱後的角括號內宣告，再於欄位中使用。這表示 <code>ImportantExcerpt</code> 的實例不能比它持有的參考活得更久。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 10-24：持有參考的結構體（官方 Rust Book）</span><button class="cb-copy" data-code="struct ImportantExcerpt<'a> {
+    part: &amp;'a str,
+}
+
+fn main() {
+    let novel = String::from(&quot;Call me Ishmael. Some years ago...&quot;);
+    let first_sentence = novel.split('.').next().unwrap();
+    let i = ImportantExcerpt {
+        part: first_sentence,
+    };
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> ImportantExcerpt</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#E06C75">    part</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> novel</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Call me Ishmael. Some years ago..."</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> first_sentence</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> novel</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">split</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">'.'</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">next</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> i</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> ImportantExcerpt</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">        part</span><span style="color:#ABB2BF">: </span><span style="color:#E06C75">first_sentence</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">    };</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>例子中 <code>novel</code> 在實例建立之前就存在，也直到實例離開作用域之後才離開，所以參考有效。</p><h2>省略規則：為什麼多半不用寫</h2><p>你可能已經發現：前幾章的 <code>first_word</code> 沒有任何標註也能編譯。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>Listing 10-25：沒有標註也能編譯的 first_word（官方 Rust Book）</span><button class="cb-copy" data-code="fn first_word(s: &amp;str) -> &amp;str {
+    let bytes = s.as_bytes();
+
+    for (i, &amp;item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return &amp;s[0..i];
+        }
+    }
+
+    &amp;s[..]
+}
+
+fn main() {
+    let my_string = String::from(&quot;hello world&quot;);
+
+    // first_word works on slices of `String`s
+    let word = first_word(&amp;my_string[..]);
+
+    let my_string_literal = &quot;hello world&quot;;
+
+    // first_word works on slices of string literals
+    let word = first_word(&amp;my_string_literal[..]);
+
+    // Because string literals *are* string slices already,
+    // this works too, without the slice syntax!
+    let word = first_word(my_string_literal);
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> first_word</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF">) -> &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> bytes</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_bytes</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    for</span><span style="color:#ABB2BF"> (</span><span style="color:#E06C75">i</span><span style="color:#ABB2BF">, &#x26;</span><span style="color:#E06C75">item</span><span style="color:#ABB2BF">) </span><span style="color:#C678DD">in</span><span style="color:#E06C75"> bytes</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">iter</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">enumerate</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">        if</span><span style="color:#E06C75"> item</span><span style="color:#56B6C2"> ==</span><span style="color:#98C379"> b' '</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#C678DD">            return</span><span style="color:#ABB2BF"> &#x26;</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">[</span><span style="color:#D19A66">0</span><span style="color:#ABB2BF">..</span><span style="color:#E06C75">i</span><span style="color:#ABB2BF">];</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    &#x26;</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">[..]</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> my_string</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"hello world"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // first_word works on slices of `String`s</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> word</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> first_word</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">my_string</span><span style="color:#ABB2BF">[..]);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> my_string_literal</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "hello world"</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // first_word works on slices of string literals</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> word</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> first_word</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E06C75">my_string_literal</span><span style="color:#ABB2BF">[..]);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // Because string literals *are* string slices already,</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    // this works too, without the slice syntax!</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> word</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> first_word</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">my_string_literal</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><p>官方文件說明這是歷史因素：Rust 1.0 之前，這段程式其實無法編譯，每個參考都需要明確的生命週期。後來 Rust 團隊發現程式設計師在特定情況下反覆輸入相同的標註，這些情況可預測且遵循確定的模式，於是把這些模式寫進編譯器，讓它自己推斷。這些模式稱為生命週期省略規則（lifetime elision rules）。它們不是給程式設計師遵守的規則，而是編譯器會考慮的特定情況；推斷完仍有歧義時，編譯器不會亂猜，而是報錯要你加標註。</p><p>函式或方法參數上的生命週期稱為輸入生命週期，回傳值上的稱為輸出生命週期。三條規則如下，規則一用於輸入，規則二、三用於輸出；也適用於 <code>fn</code> 與 <code>impl</code> 區塊：</p><ol><li>編譯器為每個參考參數各指派一個生命週期參數：一個參數得一個，兩個參數得兩個獨立的。</li><li>如果只有一個輸入生命週期，它會被指派給所有輸出生命週期。</li><li>如果有多個輸入生命週期，但其中之一是 <code>&amp;self</code> 或 <code>&amp;mut self</code>（也就是方法），則 <code>self</code> 的生命週期會指派給所有輸出生命週期。</li></ol><p>讓我們當一次編譯器。<code>first_word</code> 套用規則一與規則二後，所有參考都有了生命週期：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>省略規則推導過程（依官方 Rust Book 說明整理）</span><button class="cb-copy" data-code="fn first_word(s: &amp;str) -> &amp;str {            // 原始簽名
+fn first_word<'a>(s: &amp;'a str) -> &amp;str {     // 規則一之後
+fn first_word<'a>(s: &amp;'a str) -> &amp;'a str {  // 規則二之後" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> first_word</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF">) -> &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF"> {            </span><span style="color:#7F848E;font-style:italic">// 原始簽名</span></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> first_word</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">>(</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">) -> &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF"> {     </span><span style="color:#7F848E;font-style:italic">// 規則一之後</span></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> first_word</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">>(</span><span style="color:#E06C75">s</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">) -> &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF"> {  </span><span style="color:#7F848E;font-style:italic">// 規則二之後</span></span></code></pre></div></div><p>相對地，<code>longest</code> 套用規則一得到兩個獨立生命週期；規則二不適用（輸入不只一個），規則三也不適用（它不是方法）。三條規則跑完，回傳型別的生命週期仍然未定，所以 Listing 10-20 會報錯。</p><h3>方法中的生命週期</h3><p>為帶生命週期的結構體實作方法時，語法與泛型型別參數相同。屬於結構體欄位的生命週期，必須在 <code>impl</code> 之後宣告，並在結構體名稱之後使用，因為它們是型別的一部分。官方範例中，<code>level</code> 只有 <code>&amp;self</code> 且回傳 <code>i32</code>，不需要標註；而 <code>announce_and_return_part</code> 有兩個輸入生命週期，規則一給 <code>&amp;self</code> 與 <code>announcement</code> 各自的生命週期，再因為規則三，回傳值取得 <code>&amp;self</code> 的生命週期：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>方法中的生命週期（官方 Rust Book）</span><button class="cb-copy" data-code="struct ImportantExcerpt<'a> {
+    part: &amp;'a str,
+}
+
+impl<'a> ImportantExcerpt<'a> {
+    fn level(&amp;self) -> i32 {
+        3
+    }
+}
+
+impl<'a> ImportantExcerpt<'a> {
+    fn announce_and_return_part(&amp;self, announcement: &amp;str) -> &amp;str {
+        println!(&quot;Attention please: {announcement}&quot;);
+        self.part
+    }
+}
+
+fn main() {
+    let novel = String::from(&quot;Call me Ishmael. Some years ago...&quot;);
+    let first_sentence = novel.split('.').next().unwrap();
+    let i = ImportantExcerpt {
+        part: first_sentence,
+    };
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">struct</span><span style="color:#E5C07B"> ImportantExcerpt</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#E06C75">    part</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">> </span><span style="color:#E5C07B">ImportantExcerpt</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> level</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#E5C07B">i32</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#D19A66">        3</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">impl</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">> </span><span style="color:#E5C07B">ImportantExcerpt</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">> {</span></span>
+<span class="line"><span style="color:#C678DD">    fn</span><span style="color:#61AFEF"> announce_and_return_part</span><span style="color:#ABB2BF">(&#x26;</span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75">announcement</span><span style="color:#ABB2BF">: &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF">) -> &#x26;</span><span style="color:#E5C07B">str</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#61AFEF">        println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Attention please: {announcement}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#E5C07B">        self</span><span style="color:#ABB2BF">.part</span></span>
+<span class="line"><span style="color:#ABB2BF">    }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> novel</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Call me Ishmael. Some years ago..."</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> first_sentence</span><span style="color:#56B6C2"> =</span><span style="color:#E06C75"> novel</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">split</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">'.'</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">next</span><span style="color:#ABB2BF">().</span><span style="color:#61AFEF">unwrap</span><span style="color:#ABB2BF">();</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> i</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> ImportantExcerpt</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#E06C75">        part</span><span style="color:#ABB2BF">: </span><span style="color:#E06C75">first_sentence</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">    };</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><figure class="svg-fig"><img src="/rust/img/ch07/02-flowchart-elision-rules-flow.png" alt="編譯器依序套用三條生命週期省略規則的檢查流程" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 7-3：三條省略規則依序檢查，跑完仍未定就要自己標註（如 longest）</figcaption></figure><h2>'static：活滿整個程式</h2><p>一個特殊的生命週期是 <code>'static</code>，表示該參考可以存活於整個程式執行期間。所有字串常值都是 <code>'static</code>，因為文字直接存在執行檔裡，永遠可用。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>字串常值的 &#39;static（官方 Rust Book）</span><button class="cb-copy" data-code="let s: &amp;'static str = &quot;I have a static lifetime.&quot;;" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">let</span><span style="color:#E06C75"> s</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">static</span><span style="color:#E5C07B"> str</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "I have a static lifetime."</span><span style="color:#ABB2BF">;</span></span></code></pre></div></div><div class="call warn"><span class="ci">⚠️</span><div><strong>不要為了消除錯誤就加 'static</strong><p>官方文件提醒：錯誤訊息有時會建議使用 <code>'static</code>（上一章的 <code>dangle</code> 就是）。但先想想那個參考是否真的、也真的想要活滿整個程式。多數情況下，這類建議源自試圖建立懸空參考或生命週期不匹配，正確做法是修正那個問題，而不是加 <code>'static</code>。</p></div></div><figure class="svg-fig"><img src="/rust/img/ch07/03-flowchart-static-decision.png" alt="遇到 'static 建議時的判斷流程" loading="lazy" style="width:85%;height:auto;display:block;margin:0 auto;"><figcaption>圖 7-4：遇到編譯器建議 'static 時先想一想：參考是否真的要活滿整個程式，否則改回傳擁有所有權的型別</figcaption></figure><h2>泛型、trait bound 與生命週期同場出現</h2><p>生命週期也是泛型，所以生命週期參數與型別參數放在同一個角括號清單裡：</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>同時使用生命週期、泛型與 trait bound（官方 Rust Book）</span><button class="cb-copy" data-code="fn main() {
+    let string1 = String::from(&quot;abcd&quot;);
+    let string2 = &quot;xyz&quot;;
+
+    let result = longest_with_an_announcement(
+        string1.as_str(),
+        string2,
+        &quot;Today is someone's birthday!&quot;,
+    );
+    println!(&quot;The longest string is {result}&quot;);
+}
+
+use std::fmt::Display;
+
+fn longest_with_an_announcement<'a, T>(
+    x: &amp;'a str,
+    y: &amp;'a str,
+    ann: T,
+) -> &amp;'a str
+where
+    T: Display,
+{
+    println!(&quot;Announcement! {ann}&quot;);
+    if x.len() > y.len() { x } else { y }
+}" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> main</span><span style="color:#ABB2BF">() {</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string1</span><span style="color:#56B6C2"> =</span><span style="color:#E5C07B"> String</span><span style="color:#ABB2BF">::</span><span style="color:#61AFEF">from</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"abcd"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> string2</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "xyz"</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    let</span><span style="color:#E06C75"> result</span><span style="color:#56B6C2"> =</span><span style="color:#61AFEF"> longest_with_an_announcement</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#E06C75">        string1</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">as_str</span><span style="color:#ABB2BF">(),</span></span>
+<span class="line"><span style="color:#E06C75">        string2</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#98C379">        "Today is someone's birthday!"</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">    );</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"The longest string is {result}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">use</span><span style="color:#E5C07B"> std</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">fmt</span><span style="color:#ABB2BF">::</span><span style="color:#E5C07B">Display</span><span style="color:#ABB2BF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> longest_with_an_announcement</span><span style="color:#ABB2BF">&#x3C;'</span><span style="color:#E5C07B">a</span><span style="color:#ABB2BF">, </span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">>(</span></span>
+<span class="line"><span style="color:#E06C75">    x</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75">    y</span><span style="color:#ABB2BF">: &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75">    ann</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">) -> &#x26;'</span><span style="color:#E5C07B">a</span><span style="color:#E5C07B"> str</span></span>
+<span class="line"><span style="color:#C678DD">where</span></span>
+<span class="line"><span style="color:#E5C07B">    T</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">Display</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">{</span></span>
+<span class="line"><span style="color:#61AFEF">    println!</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"Announcement! {ann}"</span><span style="color:#ABB2BF">);</span></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#E06C75"> x</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">() > </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">len</span><span style="color:#ABB2BF">() { </span><span style="color:#E06C75">x</span><span style="color:#ABB2BF"> } </span><span style="color:#C678DD">else</span><span style="color:#ABB2BF"> { </span><span style="color:#E06C75">y</span><span style="color:#ABB2BF"> }</span></span>
+<span class="line"><span style="color:#ABB2BF">}</span></span></code></pre></div></div><h2>延伸：生命週期邊界（非官方來源簡介）</h2><p>一篇簡體中文技術文把「生命週期邊界」定位為編譯器與程式設計師之間的契約，並列出三種主要形式；這裡只做語法簡介，細節與範例的正確性以官方 Rust Reference 為準（官方 Rust Book 在本章結尾也建議進階情境參考 Rust Reference）。</p><div class="cb-wrap" data-astro-cid-c6nuo4je><div class="cb-bar" data-astro-cid-c6nuo4je><span class="cb-label" data-astro-cid-c6nuo4je>三種生命週期邊界形式（簡體中文技術文，註解已轉繁體，未經編譯驗證）</span><button class="cb-copy" data-code="// 1. 最基礎的生命週期邊界
+T: 'a                    // 型別 T 中的所有引用都必須比 'a 活得長
+
+// 2. 生命週期本身的邊界
+'b: 'a                   // 生命週期 'b 比 'a 活得至少一樣長
+
+// 3. 在 trait bound 中
+fn generic<T: 'static>() // T 中不能有任何非 'static 引用" data-astro-cid-c6nuo4je>複製</button></div><div class="cb-inner" data-astro-cid-c6nuo4je><pre class="astro-code one-dark-pro" style="background-color:#282c34;color:#abb2bf; overflow-x: auto;" tabindex="0" data-astro-cid-c6nuo4je data-language="rust"><code><span class="line"><span style="color:#7F848E;font-style:italic">// 1. 最基礎的生命週期邊界</span></span>
+<span class="line"><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">: '</span><span style="color:#E5C07B">a</span><span style="color:#7F848E;font-style:italic">                    // 型別 T 中的所有引用都必須比 'a 活得長</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// 2. 生命週期本身的邊界</span></span>
+<span class="line"><span style="color:#ABB2BF">'</span><span style="color:#E5C07B">b</span><span style="color:#ABB2BF">: '</span><span style="color:#E5C07B">a</span><span style="color:#7F848E;font-style:italic">                   // 生命週期 'b 比 'a 活得至少一樣長</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">// 3. 在 trait bound 中</span></span>
+<span class="line"><span style="color:#C678DD">fn</span><span style="color:#61AFEF"> generic</span><span style="color:#ABB2BF">&#x3C;</span><span style="color:#E5C07B">T</span><span style="color:#ABB2BF">: '</span><span style="color:#E5C07B">static</span><span style="color:#ABB2BF">>() </span><span style="color:#7F848E;font-style:italic">// T 中不能有任何非 'static 引用</span></span></code></pre></div></div><p>另外，該文提到還有 <code>for&lt;'a&gt;</code> 這種「對任意 <code>'a</code> 都成立」的高階 trait bound；多數情況下邊界可被編譯器推斷。這些屬於進階主題，素材只提到名稱與一句話說明，本書不展開。</p><div class="call tip"><span class="ci">💡</span><div><strong>本章重點回顧</strong><p>生命週期標註描述「參考之間的時間關係」，不改變任何值實際活多久；它寫在簽名上，是函式合約。編譯器靠 borrow checker 比較範圍，並用三條省略規則省下大部分標註；真的歧義時才需要你寫 <code>'a</code>。檢查全在編譯期，執行期零成本。</p></div></div><h2>下一章預告</h2><p>所有權、借用、生命週期，是 Rust 與其他語言最不一樣的三件事。第 8 章專門寫給 TypeScript 開發者：用你熟悉的 JavaScript／TypeScript 概念，對照這三件事。</p></div><nav class="cnav" data-astro-cid-ccykbmgk><a href="/rust/ch06-borrowing" class="prev" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>← 上一章</span><span class="nt" data-astro-cid-ccykbmgk>借用與參考：有契約的共享</span></a><a href="/rust/ch08-ownership-for-ts" class="next" data-astro-cid-ccykbmgk><span class="nd" data-astro-cid-ccykbmgk>下一章 →</span><span class="nt" data-astro-cid-ccykbmgk>給 TypeScript 開發者的所有權對照</span></a></nav></main></div><script>
+    // Theme
+    const html = document.documentElement;
+    const tt = document.getElementById('tt');
+    const isun = document.getElementById('isun');
+    const imoon = document.getElementById('imoon');
+    function syncIcons() {
+      const dk = html.classList.contains('dark');
+      isun.style.display = dk ? 'block' : 'none';
+      imoon.style.display = dk ? 'none' : 'block';
+    }
+    syncIcons();
+    tt?.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('cc-theme', html.classList.contains('dark') ? 'dark' : 'light');
+      syncIcons();
+    });
+
+    // Progress
+    const pb = document.getElementById('pb');
+    window.addEventListener('scroll', () => {
+      const t = document.documentElement.scrollHeight - window.innerHeight;
+      pb.style.width = t > 0 ? `${(window.scrollY / t) * 100}%` : '0%';
+    }, { passive: true });
+
+    // Sidebar part toggles
+    document.querySelectorAll('.pt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pid;
+        const list = document.querySelector(`[data-pl="${id}"]`);
+        btn.classList.toggle('open');
+        list?.classList.toggle('closed');
+      });
+    });
+
+    // Mobile menu
+    const sb = document.getElementById('sb');
+    const ov = document.getElementById('ov');
+    const mb = document.getElementById('mbtn');
+    const open = () => { sb.classList.add('open'); ov.classList.add('open'); document.body.style.overflow='hidden'; };
+    const close = () => { sb.classList.remove('open'); ov.classList.remove('open'); document.body.style.overflow=''; };
+    mb?.addEventListener('click', open);
+    ov?.addEventListener('click', close);
+  </script></body></html>
